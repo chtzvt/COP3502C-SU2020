@@ -2,9 +2,10 @@
    This program is written by: Charlton Trezevant (PID 4383060)
  */
 
-#include <stdio.h>
 #include  <stdlib.h>
+#include  "leak_detector_c.c"
 #include  "leak_detector_c.h"
+#include <stdio.h>
 
 // debugf.h
 // (c) Charlton Trezevant - 2018
@@ -43,6 +44,16 @@ void release_courses(course *courses, int num_courses);
 //// Entry
 
 int main(){
+        FILE *infile;
+        
+        infile = fopen(FILENAME, "r");
+        if (infile == NULL)
+        {
+          printf("Failed to open input file %s\n", FILENAME);
+          return 1;
+        }
+
+
         debugf("Started!\n");
 
         atexit(report_mem_leak); //memory leak detection
@@ -60,6 +71,9 @@ int main(){
    for courses and nothing more.
  */
 course *read_courses(FILE *fp, int *num_courses){
+  course *placeholder = malloc(sizeof(student**));
+
+  return placeholder;
 
 /*
    Course format
@@ -103,7 +117,9 @@ course *read_courses(FILE *fp, int *num_courses){
    Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
+  student **placeholder = malloc(sizeof(student**));
 
+  return placeholder;
 }
 
 /*
