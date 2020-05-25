@@ -2,3 +2,4 @@
 */bin/*.o
 *.o
 *.gch
+leak_info.txt
