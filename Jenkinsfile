@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+      label 'UCF'
+    }
 
     stages {
         stage('Test') {
