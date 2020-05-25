@@ -69,7 +69,8 @@ fi
 CHANGED_DIRS=`git diff --name-only HEAD~$COMMIT_RANGE_LBOUND..HEAD '*.c' | cut -d '/' -f1 | sed -e 's/^/.\//'`
 
 # We'll keep track of the number of build failures here
-FAILED_BUILDS=""
+FAILED_BUILDS=()
+FINISHED_BUILDS=()
 
 # Only attempt to run builds if there are changes
 # This happens by default, but this fixes a bug where the script
@@ -81,6 +82,11 @@ then
 
   for SUBDIR in $BUILDABLE_DIRS;
   do
+
+    if [[ " ${FINISHED_BUILDS[@]} " =~ " ${SUBDIR} " ]]
+    then
+      continue
+    fi
 
     cd $SUBDIR
 
@@ -139,10 +145,12 @@ then
           echo -e "\n\t *** BUILD SUCCESS: $SUBDIR ***"
       else
           echo -e "\n\t !!! BUILD FAILURE: $SUBDIR !!!"
-          FAILED_BUILDS=${FAILED_BUILDS}" $SUBDIR"
+          FAILED_BUILDS+=("$SUBDIR")
       fi
 
     echo -e "\n/////////////////////////////////////////////////////////\n"
+
+    FINISHED_BUILDS+=("$SUBDIR")
 
     unset MAKEFILE
     unset LINT_PASS
@@ -160,13 +168,14 @@ fi
 # Finally, display a summary of all builds performed, and how successful those were.
 # If any of our builds failed, we'll return the appropriate status code so Travis will know
 echo -e "\n--------------REPORT--------------\n"
-if [ -z $FAILED_BUILDS ]
+if [ ${#FAILED_BUILDS[@]} -eq 0 ]
 then
   echo -e " All projects built successfully!"
   EXCODE=0
 else
-  echo -e " Some projects failed to build :("
-  echo -e " Projects with build failures: $FAILED_BUILDS"
+  echo -e " Some projects failed to build :(\n"
+  echo -e " Projects with build failures:"
+  printf '\t%s\n' "${FAILED_BUILDS[@]}"
   EXCODE=1
 fi
 echo -e "\n----------------------------------\n"
