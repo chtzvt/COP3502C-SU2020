@@ -15,6 +15,8 @@
   #define debugf(fmt, ...) ((void)0)
 #endif
 
+#define FILENAME "in.txt"
+
 //// Type definitions
 
 typedef struct student {
@@ -65,18 +67,22 @@ course *read_courses(FILE *fp, int *num_courses){
 
    cs1 //name of course 1
    2 //number of sections for course 1 (cs1)
-   3 4 //no. of students and assignments for sec1 of course 1 (cs1) 101 john 70 60.5 95.2 50.6 //id lname scores
+   3 4 //no. of students and assignments for sec1 of course 1 (cs1)
+   101 john 70 60.5 95.2 50.6 //id lname scores
    102 tyler 80 60.5 95.2 66.6
    103 nusair 70 60.5 85.2 50.6
    2 3 //no. of students and assignments for sec2 of course 1 (cs1) 105 edward 90.5 60.5 98.2
    104 alan 40 60.5 95.2
    math2 //name of course 2
    3 //number of sections for course 2 (math2)
-   2 2 //no. of students and assignments for sec1 of course 2 (math2) 101 john 95.2 53.6
+   2 2 //no. of students and assignments for sec1 of course 2 (math2)
+   101 john 95.2 53.6
    103 nusair 86.2 56.6
-   2 3 //no. of students and assignments for sec2 of course 2 (math2) 105 edward 90.5 60.5 98.2
+   2 3 //no. of students and assignments for sec2 of course 2 (math2)
+   105 edward 90.5 60.5 98.2
    104 alan 40 60.5 95.2
-   3 2 //no. of students and assignments for sec3 of course 2 (math2)) 110 kyle 90.5 98.2
+   3 2 //no. of students and assignments for sec3 of course 2 (math2))
+   110 kyle 90.5 98.2
    108 bob 45 85.2
    109 smith 75.5 65.9
  */
@@ -104,7 +110,7 @@ student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_
    required data in the same format discussed in the sample output. You can write
    and use more functions in this process as you wish.
 
-   Translation:
+   Translation: calculates course statistics and prints the apropriate output
  */
 void process_courses(course *courses, int num_courses){
 
