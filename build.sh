@@ -12,7 +12,7 @@ PRINT_SYSINFO=1
 RUN_LINTER=1
 
 # List of subdirectories to blacklist (in our case, never build the Template project)
-BLACKLIST_DIRS="./Template"
+BLACKLIST_DIRS="Labs"
 
 # How many commits back should we check for changes to files? ("lower bound", default 10 commits)
 COMMIT_RANGE_LBOUND=10
