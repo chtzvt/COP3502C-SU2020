@@ -43,7 +43,7 @@ void release_courses(course *courses, int num_courses);
 //// Entry
 
 int main(){
-        debugf("Started\n");
+        debugf("Started!\n");
 
         atexit(report_mem_leak); //memory leak detection
         
