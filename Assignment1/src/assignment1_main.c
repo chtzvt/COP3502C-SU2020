@@ -46,6 +46,8 @@ int main(){
         debugf("Started\n");
 
         atexit(report_mem_leak); //memory leak detection
+        
+        return 0;
 }
 
 /*
