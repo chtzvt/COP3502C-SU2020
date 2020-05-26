@@ -171,9 +171,6 @@ int main(int argc, char **argv){
                         course* c = read_courses(infile, &case_num_courses);
                 }
 
-                // TESTING - REMOVE
-                break;
-
         }
 
         debugf(DEBUG_LEVEL_LOGIC, "Exiting...\n");
