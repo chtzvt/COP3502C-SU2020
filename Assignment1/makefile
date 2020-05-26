@@ -93,7 +93,7 @@ ifneq ("$(PROJSRC)","")
 # This will produce a binary in ./bin/, with the name of your project
 # $@ is the project name foo, $^ is the full path to the source file foo_main.c
 # Note: the flag -std=c99 tells GCC to compile for C99 syntax (ISO/IEC 9899:1999)
-	gcc -std=c99 -o ${CURDIR}/bin/$(PROJNAME) $^
+	gcc -std=c99 -o ${CURDIR}/bin/$(PROJNAME) $^ ${CURDIR}/src/leak_detector_c.c
 # Set the execuable bit on the binary produced by GCC
 # In some cases, this may not always be necessary. But we'll do it anyways.
 	@chmod +x ${CURDIR}/bin/$(PROJNAME)
