@@ -289,14 +289,16 @@ student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_
                         for(int score = 0; score < num_scores[sect]; score++) {
                                 fscanf(fp, " %f", &readScore);
                                 sections[sect][stu].scores[score] = readScore;
+                                debugf(DEBUG_LEVEL_LOGIC, "read score %.2f for student %s\n", readScore, sections[sect][stu].lname);
                                 avg += readScore;
                                 readScore = 0;
                         }
-                        
+
                         avg /= num_scores[sect];
                         sections[sect][stu].std_avg = avg;
-                        
-                        debugf(DEBUG_LEVEL_LOGIC, "completed processing scores for student %d\n", sections[sect][stu].id);
+                        avg = 0;
+
+                        debugf(DEBUG_LEVEL_LOGIC, "completed processing scores for student %d average: %.2f\n", sections[sect][stu].id, sections[sect][stu].std_avg);
                 }
         }
 
@@ -309,20 +311,59 @@ student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_
    of a test case and also takes the size of the array. Then it displays the
    required data in the same format discussed in the sample output. You can write
    and use more functions in this process as you wish.
-
-   Translation: calculates course statistics and prints the apropriate output
  */
 void process_courses(course *courses, int num_courses){
+        int pass_count = 0;
+        float sa_tmp = 0, hs_tmp = 0;
+        float* avgs_list;
+        student* hiscore;
 
-/*
-   Output specification:
+        for(int i = 0; i < num_courses; i++) {
+                avgs_list = (float*) mmgr_malloc(g_MEM, (sizeof(float) * courses[i].num_sections));
 
-   course_name pass_count list_of_averages_section(separated by space up to two decimal places) id lname avg_score (up to two decimal places)
+                for (int sect = 0; sect < courses[i].num_sections; sect++) {
 
-   test case 1
-   cs1 2 70.41 74.15 105 edward 83.07 math2 5 72.90 74.15 76.72 110 kyle 94.35 physics3 2 71.12 105 edward 79.35
- */
+                        for(int stu = 0; stu < courses[i].num_students[sect]; stu++) {
+                                sa_tmp += courses[i].sections[sect][stu].std_avg;
 
+                                if(courses[i].sections[sect][stu].std_avg > 70.0) {
+                                        debugf(DEBUG_LEVEL_LOGIC, "%s passed %s with a score of %.2f\n", courses[i].sections[sect][stu].lname, courses[i].course_name, courses[i].sections[sect][stu].std_avg);
+                                        pass_count++;
+                                } else {
+                                        debugf(DEBUG_LEVEL_LOGIC, "%s failed %s with a score of %.2f\n", courses[i].sections[sect][stu].lname, courses[i].course_name, courses[i].sections[sect][stu].std_avg);
+                                }
+
+                                if(courses[i].sections[sect][stu].std_avg > hs_tmp) {
+                                        debugf(DEBUG_LEVEL_LOGIC, "%s achieved high score of %.2f in %s prev: %.2f\n", courses[i].sections[sect][stu].lname, courses[i].sections[sect][stu].std_avg, courses[i].course_name, hs_tmp);
+                                        hiscore = &courses[i].sections[sect][stu];
+                                        hs_tmp = courses[i].sections[sect][stu].std_avg;
+                                }
+                        }
+
+                        avgs_list[sect] = sa_tmp / courses[i].num_students[sect];
+
+                        debugf(DEBUG_LEVEL_LOGIC, "Section %d average: %.2f [%.2f]\n", sect, (sa_tmp / courses[i].num_scores[sect]), avgs_list[sect]);
+                        sa_tmp = 0;
+                }
+
+                printf("%s %d ", courses[i].course_name, pass_count);
+
+                for(int j = 0; j < courses[i].num_sections; j++) {
+                        printf("%.2f ", avgs_list[j]);
+                        avgs_list[j] = 0;
+                }
+
+                printf("%d %s %.2f\n", hiscore->id, hiscore->lname, hiscore->std_avg);
+
+                mmgr_free(g_MEM, avgs_list);
+
+                pass_count = 0;
+                sa_tmp = 0;
+                hs_tmp = 0;
+                hiscore = NULL;
+        }
+
+        printf("\n");
 }
 
 /*
