@@ -117,7 +117,7 @@ MMGR* g_MEM;
 
 ////////////////////////// Entry //////////////////////////
 
-int main(){
+int main(int argc, char **argv){
         FILE *infile;
 
         debugf("Memory leak detector init.\n");
@@ -125,18 +125,27 @@ int main(){
 
         g_MEM = mmgr_init();
 
-        infile = fopen(INFILE_NAME, "r");
+        if(argc > 1) {
+                infile = fopen(argv[1], "r");
+                debugf("Input file name: %s\n", argv[1]);
+        } else {
+                infile = fopen(INFILE_NAME, "r");
+                debugf("Input file name: %s\n", INFILE_NAME);
+        }
+         
         if (infile == NULL) {
-                panic("Failed to open input file %s\n", INFILE_NAME);
+                panic("Failed to open input file\n");
                 return 1;
         }
 
         int num_cases = -1;
 
-        if(!feof(infile))
+        if(!feof(infile)) {
                 fscanf(infile, "%d", &num_cases);
-        else
+                debugf("Infile contains %d cases\n", num_cases);
+        } else {
                 panic("invalid input file format: number of test cases unknown\n");
+        }
 
         // Fetch number of test cases
         for(int case_n = 0; case_n < num_cases; case_n++) {
@@ -145,10 +154,15 @@ int main(){
                 if(!feof(infile)) {
                         // Fetch number of courses in current case
                         fscanf(infile, "%d", &case_num_courses);
+                        debugf("Infile contains %d courses for test case %d\n", case_num_courses, num_cases);
+                        
+                        course* c = read_courses(infile, &case_num_courses);
                 }
 
         }
 
+        debugf("Exiting...\n");
+        
         mmgr_cleanup(g_MEM);
         fclose(infile);
 
@@ -158,6 +172,7 @@ int main(){
 void panic(const char * fmt, ...){
         va_list vargs;
         va_start(vargs, fmt);
+        debugf("panic called\n");
         vfprintf(stderr, fmt, vargs);
         fflush(stderr);
         va_end(vargs);
@@ -197,7 +212,7 @@ course *read_courses(FILE *fp, int *num_courses){
 
                         fscanf(fp, "%d %d", cur_course->num_students, &cur_course->num_scores[sect]);
                         debugf("expecting %d students and %d scores in section %d\n", *cur_course->num_students, cur_course->num_scores[sect], sect);
-                        
+
                         cur_course->sections[sect] = mmgr_malloc(g_MEM, (sizeof(student) * *cur_course->num_students));
 
                         debugf("will now parse %d students in section %d\n", *cur_course->num_students, sect);
@@ -207,7 +222,7 @@ course *read_courses(FILE *fp, int *num_courses){
 
                                 fscanf(fp, "%d", &cur_course->sections[sect][stu].id);
                                 debugf("read student ID: %d\n", cur_course->sections[sect][stu].id);
-                                
+
                                 fscanf(fp, "%s", cur_course->sections[sect][stu].lname);
                                 debugf("read student name: %s\n", cur_course->sections[sect][stu].lname);
 
