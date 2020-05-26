@@ -165,7 +165,6 @@ void panic(const char * fmt, ...){
         exit(1);
 }
 
-
 /*
    This function takes a file pointer and reference of an integer to track how may
    courses the file has. Then it reads the data for an entire test case and return
@@ -176,38 +175,62 @@ void panic(const char * fmt, ...){
    for courses and nothing more.
  */
 course *read_courses(FILE *fp, int *num_courses){
-        course *placeholder = (course*) mmgr_malloc(global_MEM, sizeof(student**));
+        course *courses = (course*) mmgr_malloc(g_MEM, (sizeof(course*) * *num_courses));
 
-        return placeholder;
+        debugf("will now parse %d coursess\n", *num_courses);
+        for(int i = 0; i < *num_courses; i++) {
+                if(feof(fp))
+                        panic("invalid input file format: course %d\n", i+1);
 
-/*
-   Course format
-   %s
-   %d
-   %d %d
+                course* cur_course = (course*) mmgr_malloc(g_MEM, sizeof(course));
+                cur_course->course_name = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
 
-   cs1 //name of course 1
-   2 //number of sections for course 1 (cs1)
-   3 4 //no. of students and assignments for sec1 of course 1 (cs1)
-   101 john 70 60.5 95.2 50.6 //id lname scores
-   102 tyler 80 60.5 95.2 66.6
-   103 nusair 70 60.5 85.2 50.6
-   2 3 //no. of students and assignments for sec2 of course 1 (cs1) 105 edward 90.5 60.5 98.2
-   104 alan 40 60.5 95.2
-   math2 //name of course 2
-   3 //number of sections for course 2 (math2)
-   2 2 //no. of students and assignments for sec1 of course 2 (math2)
-   101 john 95.2 53.6
-   103 nusair 86.2 56.6
-   2 3 //no. of students and assignments for sec2 of course 2 (math2)
-   105 edward 90.5 60.5 98.2
-   104 alan 40 60.5 95.2
-   3 2 //no. of students and assignments for sec3 of course 2 (math2))
-   110 kyle 90.5 98.2
-   108 bob 45 85.2
-   109 smith 75.5 65.9
- */
+                // Fetch number of courses in current case
+                fscanf(fp, "%s", cur_course->course_name);
+                debugf("read course name: %s\n", cur_course->course_name);
+                fscanf(fp, "%d", &cur_course->num_sections);
+                debugf("course %s has %d sections\n", cur_course->course_name, cur_course->num_sections);
 
+                cur_course->sections = mmgr_malloc(g_MEM, (sizeof(student*) * cur_course->num_sections));
+
+                for(int sect = 0; sect < cur_course->num_sections; sect++) {
+
+                        fscanf(fp, "%d %d", cur_course->num_students, &cur_course->num_scores[sect]);
+                        debugf("expecting %d students and %d scores in section %d\n", *cur_course->num_students, cur_course->num_scores[sect], sect);
+                        
+                        cur_course->sections[sect] = mmgr_malloc(g_MEM, (sizeof(student) * *cur_course->num_students));
+
+                        debugf("will now parse %d students in section %d\n", *cur_course->num_students, sect);
+                        for(int stu = 0; stu < *cur_course->num_students; stu++) {
+                                cur_course->sections[sect][stu].scores = mmgr_malloc(g_MEM, (sizeof(float) * cur_course->num_scores[sect]));
+                                cur_course->sections[sect][stu].lname = mmgr_malloc(g_MEM, (sizeof(char) * 21));
+
+                                fscanf(fp, "%d", &cur_course->sections[sect][stu].id);
+                                debugf("read student ID: %d\n", cur_course->sections[sect][stu].id);
+                                
+                                fscanf(fp, "%s", cur_course->sections[sect][stu].lname);
+                                debugf("read student name: %s\n", cur_course->sections[sect][stu].lname);
+
+                                float avg = 0;
+
+                                for(int score = 0; score < cur_course->num_scores[sect]; score++) {
+                                        fscanf(fp, "%f", &cur_course->sections[sect][stu].scores[score]);
+                                        debugf("read student score: %f\n", cur_course->sections[sect][stu].scores[score]);
+                                        avg += cur_course->sections[sect][stu].scores[score];
+                                }
+
+                                cur_course->sections[sect][stu].std_avg = avg / cur_course->num_scores[sect];
+                                debugf("calc student average: %f\n", cur_course->sections[sect][stu].std_avg);
+
+                        }
+
+
+                }
+
+                courses[i] = *cur_course;
+        }
+
+        return courses;
 }
 
 /*
