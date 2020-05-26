@@ -399,7 +399,7 @@ void mmgr_free(MMGR *tbl, void* handle){
 
         int found = 0;
 
-        debugf("mmgr: num active entries is %d, called to free %p\n", tbl->numEntries, handle);
+        debugf("mmgr: num active entries is %d, called to free %p\n", (tbl->numEntries - tbl->numFree), handle);
 
         for(int i = tbl->numEntries; i--> 0; ) {
                 if(handle == NULL) {
@@ -422,7 +422,7 @@ void mmgr_free(MMGR *tbl, void* handle){
 
                         found = 1;
 
-                        debugf("mmgr: freed %p, %d entries remain active\n", handle, tbl->numEntries);
+                        debugf("mmgr: freed %p, %d entries remain active\n", handle, (tbl->numEntries - tbl->numFree));
                         break;
                 }
         }
@@ -437,7 +437,7 @@ void mmgr_free(MMGR *tbl, void* handle){
 void mmgr_cleanup(MMGR *tbl){
         mmgr_mutex_acquire(tbl);
 
-        int deEn = 0, deFr = 0;
+        int deEn = 0;
 
         debugf("mmgr: cleaning up\n");
 
@@ -450,7 +450,7 @@ void mmgr_cleanup(MMGR *tbl){
                 }
         }
 
-        debugf("mmgr: cleanup deallocd %d of %d active, %d of %d free entries\n", deEn, (tbl->numEntries - tbl->numFree), deFr, tbl->numFree);
+        debugf("mmgr: cleanup deallocd %d of %d active entries\n", deEn, (tbl->numEntries - tbl->numFree));
 
         free(tbl->entries);
         free(tbl->free);
