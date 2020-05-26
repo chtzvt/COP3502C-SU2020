@@ -49,9 +49,9 @@
 #define DEBUG_LEVEL_INFO 2
 #define DEBUG_LEVEL_LOGIC 3
 #define DEBUG_LEVEL_STATE 4
-#define DEBUG_LEVEL_DISABLED 99
+#define DEBUG_LEVEL_NONE 99
 
-#define DEBUG DEBUG_LEVEL_MMGR
+#define DEBUG DEBUG_LEVEL_NONE
 
 #ifdef DEBUG
 #define debugf(lvl, fmt, ...) \
@@ -159,27 +159,26 @@ int main(int argc, char **argv){
                 panic("invalid input file format: number of test cases unknown\n");
         }
 
-        // Fetch number of test cases
-
-        course** test_courses = mmgr_malloc(g_MEM, sizeof(course) * num_cases);
+        course* test_courses;
 
         for(int case_n = 0; case_n < num_cases; case_n++) {
-                int case_num_courses;
+                int case_num_courses = 0;
 
                 if(!feof(infile)) {
                         // Fetch number of courses in current case
                         fscanf(infile, "%d", &case_num_courses);
                         debugf(DEBUG_LEVEL_LOGIC, "Infile contains %d courses for test case %d\n", case_num_courses, case_n);
 
-                        test_courses[case_n] = read_courses(infile, &case_num_courses);
+                        test_courses = read_courses(infile, &case_num_courses);
                         debugf(DEBUG_LEVEL_MMGR, "read courses for case %d\n", case_n);
 
-                        release_courses(test_courses[case_n], case_num_courses);
-                        mmgr_free(g_MEM, test_courses);
+                        printf("test case %d\n", case_n+1);
+                        process_courses(test_courses, case_num_courses);
+                        release_courses(test_courses, case_num_courses);
 
                         debugf(DEBUG_LEVEL_MMGR, "released courses for case %d\n", case_n);
-
                         debugf(DEBUG_LEVEL_LOGIC, "Test case %d ended.\n", case_n);
+
                 } else {
                         panic("reached EOF while attempting to run test case %d", case_n);
                 }
