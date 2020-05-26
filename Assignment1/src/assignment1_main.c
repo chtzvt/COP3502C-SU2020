@@ -95,7 +95,7 @@ void release_courses(course *courses, int num_courses);
 // Rave reviews:
 // 10/10
 //    - IGN
-// ==3291== All heap blocks were freed -- no leaks are possible
+// All heap blocks were freed -- no leaks are possible
 //    - Valgrind
 // ~ it's pronounced "mumger" ~
 typedef struct MMGR_Entry {
@@ -331,10 +331,10 @@ void process_courses(course *courses, int num_courses){
    courses of a test case and also takes the size of the array. Then it free up
    all the memory allocated within it. You can create more function as needed to
    ease the process.
- */
 
-// N.B. anything not explicitly removed by release_courses will be garbage collected
-// in the memory manager's cleanup routine.
+   N.B. anything not explicitly removed by release_courses will be garbage collected
+   in the memory manager's cleanup routine.
+ */
 void release_courses(course *courses, int num_courses){
         debugf(DEBUG_LEVEL_LOGIC, "releasing courses\n");
 
