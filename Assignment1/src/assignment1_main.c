@@ -6,37 +6,38 @@
 #include <string.h>
 
 /*
-  ~ ~ Did You Know? ~ ~
+   The provided leak detector causes compiler warnings and, somewhat ironically,
+   appears to contain a memory leak of its own.
 
-  The supplied leak detector causes compiler warnings, and ironically appears to
-  contain a memory leak.
+   This is apparently because fclose() is never called on the leak detector's
+   output file.
 
-  This is apparently because fclose() is never called on the leak detector's
-  output file.
+   Valgrind output:
+   ==2024== HEAP SUMMARY:
+   ==2024==     in use at exit: 552 bytes in 1 blocks
+   ==2024==   total heap usage: 5 allocs, 4 frees, 5,512 bytes allocated
+   ==2024==
+   ==2024== 552 bytes in 1 blocks are still reachable in loss record 1 of 1
+   ==2024==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+   ==2024==    by 0x4EBAE49: __fopen_internal (iofopen.c:65)
+   ==2024==    by 0x4EBAE49: fopen@@GLIBC_2.2.5 (iofopen.c:89)
+   ==2024==    by 0x109765: report_mem_leak (in /home/net/ch123722/COP3502C/Assignment1/bin/assignment1)
+   ==2024==    by 0x4E7F040: __run_exit_handlers (exit.c:108)
+   ==2024==    by 0x4E7F139: exit (exit.c:139)
+   ==2024==    by 0x4E5DB9D: (below main) (libc-start.c:344)
 
-  ==2024== HEAP SUMMARY:
-  ==2024==     in use at exit: 552 bytes in 1 blocks
-  ==2024==   total heap usage: 5 allocs, 4 frees, 5,512 bytes allocated
-  ==2024==
-  ==2024== 552 bytes in 1 blocks are still reachable in loss record 1 of 1
-  ==2024==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-  ==2024==    by 0x4EBAE49: __fopen_internal (iofopen.c:65)
-  ==2024==    by 0x4EBAE49: fopen@@GLIBC_2.2.5 (iofopen.c:89)
-  ==2024==    by 0x109765: report_mem_leak (in /home/net/ch123722/COP3502C/Assignment1/bin/assignment1)
-  ==2024==    by 0x4E7F040: __run_exit_handlers (exit.c:108)
-  ==2024==    by 0x4E7F139: exit (exit.c:139)
-  ==2024==    by 0x4E5DB9D: (below main) (libc-start.c:344)
-
-  My static analyzer complains about this:
+   My static analyzer also complains about this format string error:
 
    /home/net/ch123722/COP3502C/Assignment1/src/leak_detector_c.c: In function ‘report_mem_leak’:
    /home/net/ch123722/COP3502C/Assignment1/src/leak_detector_c.c:190:30: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘void *’ [-Wformat=]
     sprintf(info, "address : %d\n", leak_info->mem_info.address);
                              ~^     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
                              %p
-*/
 
-#include  "leak_detector_c.h"
+   On another note, the leak detector doesn't run on macOS at all. I'm looking
+   into it.
+ */
+
 #include <stdio.h>
 
 // debugf.h
@@ -74,35 +75,42 @@ void process_courses(course *courses, int num_courses);
 void release_courses(course *courses, int num_courses);
 
 // My function prototypes
-// Prototypes for my memory manager
+// MMGR Type definitions/function prototypes
+// (c) Charlton Trezevant 2020
 // Rave reviews:
+// 10/10
+//    - IGN
 // ==3291== All heap blocks were freed -- no leaks are possible
-//                                       - Valgrind, 2020
-typedef struct MemMgr_Entry {
+//    - Valgrind
+// ~ it's pronounced "mumger" ~
+typedef struct MMGR_Entry {
         void* handle;
         size_t size;
-        // todo: refcounts, passive gc sweeps
-        // allow entries to be marked/given affinities for simpler release
-} MemMgr_Entry;
+        // todo: gc via refcounts or mark+sweep
+        // allow entries to be marked/given affinities for batched release
+} MMGR_Entry;
 
-typedef struct MemMgr_Table {
+typedef struct MMGR {
         // todo: benchmark current realloc strat vs lili vs pointer hash table
-        MemMgr_Entry **entries;
+        MMGR_Entry **entries;
         int numEntries;
-        int *free;
+        int *free; // available recyclable slots
         int numFree;
         volatile int mutex;
-} MemMgr_Table;
+} MMGR;
 
-MemMgr_Table *mmgr_init();
-void *mmgr_malloc(MemMgr_Table *t, size_t size);
-void mmgr_free(MemMgr_Table *t, void* handle);
-void mmgr_cleanup(MemMgr_Table *t);
-void mmgr_mutex_acquire(MemMgr_Table *t);
-void mmgr_mutex_release(MemMgr_Table *t);
+MMGR *mmgr_init();
+void *mmgr_malloc(MMGR *tbl, size_t size);
+void mmgr_free(MMGR *tbl, void* handle);
+void mmgr_cleanup(MMGR *tbl);
+void mmgr_mutex_acquire(MMGR *tbl);
+void mmgr_mutex_release(MMGR *tbl);
 
-// Instance of my memory manager
-MemMgr_Table* global_MEM;
+// Utility
+void panic(const char * format, ...);
+
+// Global memory manager instance
+MMGR* g_MEM;
 
 //// Entry
 
