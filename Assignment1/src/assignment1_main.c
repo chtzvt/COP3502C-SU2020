@@ -123,6 +123,8 @@ int main(){
         debugf("Memory leak detector called.\n");
         atexit(report_mem_leak); //memory leak detection
 
+        global_MEM = mmgr_init();
+
         infile = fopen(INFILE_NAME, "r");
         if (infile == NULL)
         {
