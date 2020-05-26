@@ -263,6 +263,7 @@ course *read_courses(FILE *fp, int *num_courses){
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
         student **sections = (student**) mmgr_malloc(g_MEM, (sizeof(student*) * num_sections));
+        float avg = 0, readScore = 0;
 
         for(int sect = 0; sect < num_sections; sect++) {
 
@@ -285,18 +286,17 @@ student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_
                         fscanf(fp, " %s", sections[sect][stu].lname);
                         debugf(DEBUG_LEVEL_LOGIC, "read student name: %s\n", sections[sect][stu].lname);
 
-                        float avg = 0;
-
                         for(int score = 0; score < num_scores[sect]; score++) {
-                                float readScore = 0;
                                 fscanf(fp, " %f", &readScore);
                                 sections[sect][stu].scores[score] = readScore;
-                                debugf(DEBUG_LEVEL_LOGIC, "read student score: %f\n", readScore);
                                 avg += readScore;
+                                readScore = 0;
                         }
-
-                        sections[sect][stu].std_avg = avg / num_scores[sect];
-                        debugf(DEBUG_LEVEL_LOGIC, "calc student average: %f\n", sections[sect][stu].std_avg);
+                        
+                        avg /= num_scores[sect];
+                        sections[sect][stu].std_avg = avg;
+                        
+                        debugf(DEBUG_LEVEL_LOGIC, "completed processing scores for student %d\n", sections[sect][stu].id);
                 }
         }
 
