@@ -235,11 +235,26 @@ void process_courses(course *courses, int num_courses){
    courses of a test case and also takes the size of the array. Then it free up
    all the memory allocated within it. You can create more function as needed to
    ease the process.
-
-   Translation: free()
- */
+*/
 void release_courses(course *courses, int num_courses){
+        for(int i = 0; i < num_courses; i++) {
+                for(int j = 0; j < courses[i].num_sections; j++) {
+                        int curSect_numStudents = courses[i].num_students[j];
 
+                        for(int k = 0; k < curSect_numStudents; k++) {
+                                mmgr_free(global_MEM, courses[i].sections[k]->scores);
+                                mmgr_free(global_MEM, courses[i].sections[k]->lname);
+                                mmgr_free(global_MEM, courses[i].sections[k]);
+                        }
+
+                        mmgr_free(global_MEM, courses[i].sections);
+                        mmgr_free(global_MEM, courses[i].course_name);
+                        mmgr_free(global_MEM, courses[i].num_students);
+                        mmgr_free(global_MEM, courses[i].num_scores);
+                }
+        }
+
+        mmgr_free(global_MEM, courses);
 }
 
 ////////////////////////// Memory manager //////////////////////////
