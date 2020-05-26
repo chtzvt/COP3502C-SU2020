@@ -276,9 +276,11 @@ student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_
                         float avg = 0;
 
                         for(int score = 0; score < num_scores[sect]; score++) {
-                                fscanf(fp, " %f", &sections[sect][stu].scores[score]);
-                                debugf(DEBUG_LEVEL_LOGIC, "read student score: %f\n", sections[sect][stu].scores[score]);
-                                avg += sections[sect][stu].scores[score];
+                                float readScore = 0;
+                                fscanf(fp, " %f", &readScore);
+                                sections[sect][stu].scores[score] = readScore;
+                                debugf(DEBUG_LEVEL_LOGIC, "read student score: %f\n", readScore);
+                                avg += readScore;
                         }
 
                         sections[sect][stu].std_avg = avg / num_scores[sect];
