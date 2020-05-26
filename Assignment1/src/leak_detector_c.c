@@ -200,4 +200,5 @@ void report_mem_leak(void)
 		}
 	}
 	clear();
+	fclose(fp_write);
 }
