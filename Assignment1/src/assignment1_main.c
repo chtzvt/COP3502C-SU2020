@@ -195,7 +195,7 @@ int main(){
    for courses and nothing more.
  */
 course *read_courses(FILE *fp, int *num_courses){
-        course *placeholder = malloc(sizeof(student**));
+        course *placeholder = (course*) mmgr_malloc(global_MEM, sizeof(student**));
 
         return placeholder;
 
@@ -241,7 +241,7 @@ course *read_courses(FILE *fp, int *num_courses){
    Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
-        student **placeholder = malloc(sizeof(student**));
+        student **placeholder = (student**) mmgr_malloc(global_MEM, sizeof(student**));
 
         return placeholder;
 }
