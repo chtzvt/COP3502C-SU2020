@@ -143,11 +143,11 @@ int main(){
         return 0;
 }
 
-/*FileMeta* read_file_meta(FILE *fp){
+FileMeta* read_file_meta(FILE *fp){
         FileMeta* meta = (FileMeta*) mmgr_malloc(global_MEM, sizeof(FileMeta));
 
-
-   }*/
+        return meta;
+}
 
 
 /*
