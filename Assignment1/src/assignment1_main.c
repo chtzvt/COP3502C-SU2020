@@ -44,11 +44,24 @@
 
 // debugf.h
 // (c) Charlton Trezevant - 2018
-#define DEBUG
+#define DEBUG_LEVEL_ALL 0
+#define DEBUG_LEVEL_MMGR 1
+#define DEBUG_LEVEL_INFO 2
+#define DEBUG_LEVEL_LOGIC 3
+#define DEBUG_LEVEL_STATE 4
+#define DEBUG_LEVEL_DISABLED 99
+
+#define DEBUG DEBUG_LEVEL_ALL
+
 #ifdef DEBUG
-  #define debugf(fmt, ...) fprintf(stderr, fmt, ## __VA_ARGS__); fflush(stderr)
+#define debugf(lvl, fmt, ...)                           \
+        ({                                                      \
+                if (DEBUG == 0 || (lvl) >= DEBUG) {                  \
+                        fprintf(stderr, fmt, ## __VA_ARGS__); fflush(stderr); \
+                }                                                   \
+        })
 #else
-  #define debugf(fmt, ...) ((void)0)
+  #define debugf(lvl, fmt, ...) ((void)0)
 #endif
 
 #define INFILE_NAME "in.txt"
@@ -114,23 +127,22 @@ void panic(const char * format, ...);
 // Global memory manager instance
 MMGR* g_MEM;
 
-
 ////////////////////////// Entry //////////////////////////
 
 int main(int argc, char **argv){
         FILE *infile;
 
-        debugf("Memory leak detector init.\n");
+        debugf(DEBUG_LEVEL_MMGR, "Memory leak detector init.\n");
         atexit(report_mem_leak); //memory leak detection
 
         g_MEM = mmgr_init();
 
         if(argc > 1) {
                 infile = fopen(argv[1], "r");
-                debugf("Input file name: %s\n", argv[1]);
+                debugf(DEBUG_LEVEL_INFO, "Input file name: %s\n", argv[1]);
         } else {
                 infile = fopen(INFILE_NAME, "r");
-                debugf("Input file name: %s\n", INFILE_NAME);
+                debugf(DEBUG_LEVEL_INFO, "Input file name: %s\n", INFILE_NAME);
         }
 
         if (infile == NULL) {
@@ -142,7 +154,7 @@ int main(int argc, char **argv){
 
         if(!feof(infile)) {
                 fscanf(infile, "%d", &num_cases);
-                debugf("Infile contains %d cases\n", num_cases);
+                debugf(DEBUG_LEVEL_LOGIC, "Infile contains %d cases\n", num_cases);
         } else {
                 panic("invalid input file format: number of test cases unknown\n");
         }
@@ -154,14 +166,17 @@ int main(int argc, char **argv){
                 if(!feof(infile)) {
                         // Fetch number of courses in current case
                         fscanf(infile, "%d", &case_num_courses);
-                        debugf("Infile contains %d courses for test case %d\n", case_num_courses, num_cases);
+                        debugf(DEBUG_LEVEL_LOGIC, "Infile contains %d courses for test case %d\n", case_num_courses, case_n);
 
                         course* c = read_courses(infile, &case_num_courses);
                 }
 
+                // TESTING - REMOVE
+                break;
+
         }
 
-        debugf("Exiting...\n");
+        debugf(DEBUG_LEVEL_LOGIC, "Exiting...\n");
 
         mmgr_cleanup(g_MEM);
         fclose(infile);
@@ -172,7 +187,7 @@ int main(int argc, char **argv){
 void panic(const char * fmt, ...){
         va_list vargs;
         va_start(vargs, fmt);
-        debugf("panic called\n");
+        debugf(DEBUG_LEVEL_ALL, "panic called\n");
         vfprintf(stderr, fmt, vargs);
         fflush(stderr);
         va_end(vargs);
@@ -247,8 +262,10 @@ course *read_courses(FILE *fp, int *num_courses){
                 }
 
                 courses[i] = *cur_course;
+                debugf(DEBUG_LEVEL_LOGIC, "course %d appended to courses array\n", i);
         }
 
+        debugf(DEBUG_LEVEL_LOGIC, "returning\n");
         return courses;
 }
 
@@ -338,7 +355,7 @@ MMGR *mmgr_init(){
 
         state_table->mutex = 0;
 
-        debugf("mmgr: initialized\n");
+        debugf(DEBUG_LEVEL_MMGR, "mmgr: initialized\n");
 
         return state_table;
 }
@@ -355,7 +372,7 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
         if(tbl->numFree > 0) {
                 int tgt_idx = tbl->free[tbl->numFree - 1];
 
-                debugf("mmgr: found reusable previously allocated entry %p\n", tbl->entries[tgt_idx]);
+                debugf(DEBUG_LEVEL_MMGR, "mmgr: found reusable previously allocated entry %p\n", tbl->entries[tgt_idx]);
 
                 target = (MMGR_Entry*) realloc(tbl->entries[tgt_idx], sizeof(MMGR_Entry) + size);
                 target->size = size;
@@ -366,12 +383,12 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
 
                 tbl->numFree--;
 
-                debugf("mmgr: reallocated %lu bytes\n", size);
+                debugf(DEBUG_LEVEL_MMGR, "mmgr: reallocated %lu bytes\n", size);
 
                 // Otherwise the state table will need to be resized to accommodate a new
                 // entry
         } else {
-                debugf("mmgr: no recyclable entries available, increasing table size\n");
+                debugf(DEBUG_LEVEL_MMGR, "mmgr: no recyclable entries available, increasing table size\n");
 
                 tbl->entries = (MMGR_Entry**) realloc(tbl->entries, (sizeof(MMGR_Entry*) * (tbl->numEntries + 1)));
 
@@ -384,7 +401,7 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
 
                 tbl->numEntries++;
 
-                debugf("mmgr: allocated %lu bytes, handle is %p\n", target->size, target->handle);
+                debugf(DEBUG_LEVEL_MMGR, "mmgr: allocated %lu bytes, handle is %p\n", target->size, target->handle);
         }
 
         mmgr_mutex_release(tbl);
@@ -399,22 +416,23 @@ void mmgr_free(MMGR *tbl, void* handle){
 
         int found = 0;
 
-        debugf("mmgr: num active entries is %d, called to free %p\n", (tbl->numEntries - tbl->numFree), handle);
+        debugf(DEBUG_LEVEL_MMGR, "mmgr: num active entries is %d, called to free %p\n", (tbl->numEntries - tbl->numFree), handle);
 
         for(int i = tbl->numEntries; i--> 0; ) {
                 if(handle == NULL) {
-                        debugf("mmgr: provided NULL handle! no-op\n");
+                        debugf(DEBUG_LEVEL_MMGR, "mmgr: provided NULL handle! no-op\n");
                         break;
                 }
 
                 if(tbl->entries[i]->handle == handle) {
-                        debugf("mmgr: found handle %p at index %d\n", handle, i);
+                        debugf(DEBUG_LEVEL_MMGR, "mmgr: found handle %p at index %d\n", handle, i);
 
                         MMGR_Entry* target = tbl->entries[i];
 
                         tbl->numFree++;
 
                         free(target->handle);
+                        
                         target->size = 0;
 
                         tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree + 1)));
@@ -422,13 +440,13 @@ void mmgr_free(MMGR *tbl, void* handle){
 
                         found = 1;
 
-                        debugf("mmgr: freed %p, %d entries remain active\n", handle, (tbl->numEntries - tbl->numFree));
+                        debugf(DEBUG_LEVEL_MMGR, "mmgr: freed %p, %d entries remain active\n", handle, (tbl->numEntries - tbl->numFree));
                         break;
                 }
         }
 
         if(found == 0)
-                debugf("mmgr: called to free %p but couldn't find it, no-op\n", handle);
+                debugf(DEBUG_LEVEL_MMGR, "mmgr: called to free %p but couldn't find it, no-op\n", handle);
 
         mmgr_mutex_release(tbl);
 }
@@ -439,7 +457,7 @@ void mmgr_cleanup(MMGR *tbl){
 
         int deEn = 0;
 
-        debugf("mmgr: cleaning up\n");
+        debugf(DEBUG_LEVEL_MMGR, "mmgr: cleaning up\n");
 
         // Free all active entries and what they're pointing to
         for(int i = 0; i < tbl->numEntries; i++) {
@@ -450,7 +468,7 @@ void mmgr_cleanup(MMGR *tbl){
                 }
         }
 
-        debugf("mmgr: cleanup deallocd %d of %d active entries\n", deEn, (tbl->numEntries - tbl->numFree));
+        debugf(DEBUG_LEVEL_MMGR, "mmgr: cleanup deallocd %d of %d active entries\n", deEn, (tbl->numEntries - tbl->numFree));
 
         free(tbl->entries);
         free(tbl->free);
