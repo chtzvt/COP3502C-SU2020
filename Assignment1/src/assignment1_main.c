@@ -51,7 +51,7 @@
 #define DEBUG_LEVEL_STATE 4
 #define DEBUG_LEVEL_DISABLED 99
 
-#define DEBUG DEBUG_LEVEL_ALL
+#define DEBUG DEBUG_LEVEL_LOGIC
 
 #ifdef DEBUG
 #define debugf(lvl, fmt, ...)                           \
