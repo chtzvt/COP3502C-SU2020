@@ -4,7 +4,7 @@
 
 #include  <stdlib.h>
 #include <string.h>
-//#include  "leak_detector_c.h"
+#include  "leak_detector_c.h"
 #include <stdio.h>
 
 // debugf.h
@@ -82,7 +82,7 @@ int main(){
         FILE *infile;
 
         debugf("Memory leak detector called.\n");
-//        atexit(report_mem_leak); //memory leak detection
+        atexit(report_mem_leak); //memory leak detection
 
         infile = fopen(INFILE_NAME, "r");
         if (infile == NULL)
