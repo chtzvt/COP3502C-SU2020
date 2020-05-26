@@ -415,7 +415,9 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
                 debugf(DEBUG_LEVEL_MMGR, "mmgr: found reusable previously allocated entry %d\n", tgt_idx);
 
                 tbl->entries[tgt_idx]->size = size;
-                tbl->entries[tgt_idx]->handle = calloc(1, size);
+                tbl->entries[tgt_idx]->handle = malloc(size);
+                memset(tbl->entries[tgt_idx]->handle, 0, size);
+
                 handle = tbl->entries[tgt_idx]->handle;
 
                 tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree - 1)));
@@ -433,7 +435,9 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
 
                 tbl->entries[tbl->numEntries] = (MMGR_Entry*) calloc(1, sizeof(MMGR_Entry) + sizeof(void*));
 
-                tbl->entries[tbl->numEntries]->handle = calloc(1, size);
+                tbl->entries[tbl->numEntries]->handle = malloc(size);
+                memset(tbl->entries[tbl->numEntries]->handle, 0, size);
+
                 handle = tbl->entries[tbl->numEntries]->handle;
                 tbl->entries[tbl->numEntries]->size = size;
 
