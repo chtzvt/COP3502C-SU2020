@@ -54,11 +54,11 @@
 #define DEBUG DEBUG_LEVEL_LOGIC
 
 #ifdef DEBUG
-#define debugf(lvl, fmt, ...)                           \
-        ({                                                      \
-                if (DEBUG == 0 || (lvl) >= DEBUG) {                  \
+#define debugf(lvl, fmt, ...) \
+        ({ \
+                if (DEBUG == 0 || (lvl) >= DEBUG) { \
                         fprintf(stderr, fmt, ## __VA_ARGS__); fflush(stderr); \
-                }                                                   \
+                } \
         })
 #else
   #define debugf(lvl, fmt, ...) ((void)0)
@@ -193,13 +193,11 @@ void panic(const char * fmt, ...){
 }
 
 /*
+   Spec:
    This function takes a file pointer and reference of an integer to track how may
    courses the file has. Then it reads the data for an entire test case and return
    the allocated memory for all the courses (including sections) for a test case.
    Note that you can call other functions from this function as needed.
-
-   Translation: On the surface, it sounds like this is just handling memory allocation
-   for courses and nothing more.
  */
 course *read_courses(FILE *fp, int *num_courses){
         course *courses = (course*) mmgr_malloc(g_MEM, (sizeof(course*) * *num_courses));
@@ -240,6 +238,7 @@ course *read_courses(FILE *fp, int *num_courses){
 }
 
 /*
+   Spec:
    This function takes the file pointer, references of two arrays, one for number
    of students, and one for number of scores for a course. The function also takes
    an integer that indicates the number of sections the course has. The function
@@ -252,9 +251,9 @@ course *read_courses(FILE *fp, int *num_courses){
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
         student **sections = mmgr_malloc(g_MEM, (sizeof(student*) * num_sections));
-        
+
         for(int sect = 0; sect < num_sections; sect++) {
-          
+
                 fscanf(fp, "%d %d", &num_students[sect], &num_scores[sect]);
                 debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", num_students[sect], num_scores[sect], sect);
 
@@ -286,11 +285,12 @@ student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_
                         debugf(DEBUG_LEVEL_LOGIC, "calc student average: %f\n", sections[sect][stu].std_avg);
                 }
         }
-        
+
         return sections;
 }
 
 /*
+   Spec:
    This function takes the array of courses produced and filled by all the courses
    of a test case and also takes the size of the array. Then it displays the
    required data in the same format discussed in the sample output. You can write
@@ -312,6 +312,7 @@ void process_courses(course *courses, int num_courses){
 }
 
 /*
+   Spec:
    This function takes the array of courses produced and filled by all the
    courses of a test case and also takes the size of the array. Then it free up
    all the memory allocated within it. You can create more function as needed to
