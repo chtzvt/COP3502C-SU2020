@@ -160,9 +160,9 @@ int main(int argc, char **argv){
         }
 
         // Fetch number of test cases
-        
+
         course** test_courses = mmgr_malloc(g_MEM, sizeof(course) * num_cases);
-        
+
         for(int case_n = 0; case_n < num_cases; case_n++) {
                 int case_num_courses;
 
@@ -173,18 +173,16 @@ int main(int argc, char **argv){
 
                         test_courses[case_n] = read_courses(infile, &case_num_courses);
                         debugf(DEBUG_LEVEL_MMGR, "read courses for case %d\n", case_n);
-                        
+
                         release_courses(test_courses[case_n], case_num_courses);
                         mmgr_free(g_MEM, test_courses);
-                        
+
                         debugf(DEBUG_LEVEL_MMGR, "released courses for case %d\n", case_n);
-                        
+
                         debugf(DEBUG_LEVEL_LOGIC, "Test case %d ended.\n", case_n);
                 } else {
-                  panic("reached EOF while attempting to run test case %d", case_n);
+                        panic("reached EOF while attempting to run test case %d", case_n);
                 }
-                
-                //break;
         }
 
         debugf(DEBUG_LEVEL_LOGIC, "Exiting...\n");
@@ -501,8 +499,8 @@ void mmgr_cleanup(MMGR *tbl){
         for(int i = 0; i < tbl->numEntries; i++) {
                 if(tbl->entries[i] != NULL) {
                         if(tbl->entries[i]->handle != NULL)
-                          free(tbl->entries[i]->handle);
-                          
+                                free(tbl->entries[i]->handle);
+
                         free(tbl->entries[i]);
                         deEn++;
                 }
