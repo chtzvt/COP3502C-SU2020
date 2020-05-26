@@ -286,6 +286,8 @@ student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_
                         debugf(DEBUG_LEVEL_LOGIC, "calc student average: %f\n", sections[sect][stu].std_avg);
                 }
         }
+        
+        return sections;
 }
 
 /*
