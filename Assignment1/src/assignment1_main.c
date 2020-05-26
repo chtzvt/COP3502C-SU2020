@@ -327,7 +327,7 @@ void mmgr_free(MemMgr_Table *t, void* handle){
                         free(target->handle);
                         target->size = 0;
 
-                        t->free = (int*) realloc(t->free, (sizeof(int*) * (t->numFree + 1)));
+                        t->free = (int*) realloc(t->free, (sizeof(int) * (t->numFree + 1)));
                         t->free[t->numFree] = i;
 
                         found = 1;
