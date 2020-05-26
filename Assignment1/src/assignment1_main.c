@@ -322,24 +322,39 @@ void process_courses(course *courses, int num_courses){
 // N.B. anything not explicitly removed by release_courses will be garbage collected
 // in the memory manager's cleanup routine.
 void release_courses(course *courses, int num_courses){
-        for(int i = 0; i < num_courses; i++) {
-                for(int j = 0; j < courses[i].num_sections; j++) {
-                        int curSect_numStudents = courses[i].num_students[j];
+        debugf(DEBUG_LEVEL_LOGIC, "releasing courses\n");
 
-                        for(int k = 0; k < curSect_numStudents; k++) {
-                                mmgr_free(g_MEM, courses[i].sections[k]->scores);
-                                mmgr_free(g_MEM, courses[i].sections[k]->lname);
-                                mmgr_free(g_MEM, courses[i].sections[k]);
+        for(int i = 0; i < num_courses; i++) {
+
+                debugf(DEBUG_LEVEL_MMGR, "releasing course %d\n", i);
+
+                for(int j = 0; j < courses[i].num_sections; j++) {
+
+                        debugf(DEBUG_LEVEL_MMGR, "releasing course %d section %d\n", i, j);
+                        debugf(DEBUG_LEVEL_MMGR, "%d students to release in course %d section %d\n", courses[i].num_students[j], i, j);
+
+                        for(int k = 0; k < courses[i].num_students[j]; k++) {
+                                debugf(DEBUG_LEVEL_MMGR, "LOOP %d\n", k);
+                                mmgr_free(g_MEM, courses[i].sections[j][k].scores);
+                                debugf(DEBUG_LEVEL_MMGR, "released course %d section %d student %d scores\n", i, j, k);
+                                mmgr_free(g_MEM, courses[i].sections[j][k].lname);
+                                debugf(DEBUG_LEVEL_MMGR, "released course %d section %d student %d lname\n", i, j, k);
                         }
 
-                        mmgr_free(g_MEM, courses[i].sections);
-                        mmgr_free(g_MEM, courses[i].course_name);
-                        mmgr_free(g_MEM, courses[i].num_students);
-                        mmgr_free(g_MEM, courses[i].num_scores);
                 }
-        }
 
-        mmgr_free(g_MEM, courses);
+                mmgr_free(g_MEM, courses[i].sections);
+                debugf(DEBUG_LEVEL_MMGR, "released course %d sections array\n", i);
+
+                mmgr_free(g_MEM, courses[i].course_name);
+                debugf(DEBUG_LEVEL_MMGR, "released course %d name\n", i);
+
+                mmgr_free(g_MEM, courses[i].num_students);
+                debugf(DEBUG_LEVEL_MMGR, "released course %d num_students\n", i);
+
+                mmgr_free(g_MEM, courses[i].num_scores);
+                debugf(DEBUG_LEVEL_MMGR, "released course %d num_scores\n", i);
+        }
 }
 
 ////////////////////////// Memory manager //////////////////////////
