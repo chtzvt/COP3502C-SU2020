@@ -353,7 +353,7 @@ void release_courses(course *courses, int num_courses){
 // In the future, I'll spawn a worker thread to performs automated garbage
 // collection through mark and sweep or simple refcounting.
 MMGR *mmgr_init(){
-        MMGR *state_table = malloc(sizeof(MMGR));
+        MMGR *state_table = calloc(1, sizeof(MMGR));
 
         state_table->free = NULL;
         state_table->numFree = 0;
@@ -374,7 +374,7 @@ MMGR *mmgr_init(){
 void *mmgr_malloc(MMGR *tbl, size_t size){
         mmgr_mutex_acquire(tbl);
 
-        MMGR_Entry* target;
+        void* handle = NULL;
 
         // If freed entries are available, we can recycle them
         if(tbl->numFree > 0) {
@@ -382,10 +382,9 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
 
                 debugf(DEBUG_LEVEL_MMGR, "mmgr: found reusable previously allocated entry %p\n", tbl->entries[tgt_idx]);
 
-                target = (MMGR_Entry*) realloc(tbl->entries[tgt_idx], sizeof(MMGR_Entry) + size);
-                target->size = size;
-
-                tbl->entries[tgt_idx] = target;
+                tbl->entries[tgt_idx]->size = size;
+                tbl->entries[tgt_idx]->handle = calloc(1, size);
+                handle = tbl->entries[tgt_idx]->handle;
 
                 tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree - 1)));
 
@@ -400,22 +399,22 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
 
                 tbl->entries = (MMGR_Entry**) realloc(tbl->entries, (sizeof(MMGR_Entry*) * (tbl->numEntries + 1)));
 
-                tbl->entries[tbl->numEntries] = (MMGR_Entry*) malloc(sizeof(MMGR_Entry) + size);
+                tbl->entries[tbl->numEntries] = (MMGR_Entry*) calloc(1, sizeof(MMGR_Entry) + sizeof(void*));
 
-                target = tbl->entries[tbl->numEntries];
-
-                target->handle = malloc(size);
-                target->size = size;
+                tbl->entries[tbl->numEntries]->handle = calloc(1, size);
+                handle = tbl->entries[tbl->numEntries]->handle;
+                tbl->entries[tbl->numEntries]->size = size;
 
                 tbl->numEntries++;
 
-                debugf(DEBUG_LEVEL_MMGR, "mmgr: allocated %lu bytes, handle is %p\n", target->size, target->handle);
+                //debugf(DEBUG_LEVEL_MMGR, "mmgr: allocated %lu bytes, handle is %p\n", tbl->entries[tbl->numEntries]->size, handle);
         }
 
         mmgr_mutex_release(tbl);
 
-        return target->handle;
+        return handle;
 }
+
 
 // Frees the provided pointer and checks out the active entry in the g_MEM
 // state table so that it can be reallocated
@@ -441,7 +440,6 @@ void mmgr_free(MMGR *tbl, void* handle){
 
                         free(target->handle);
                         target->handle = NULL;
-
                         target->size = 0;
 
                         tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree + 1)));
