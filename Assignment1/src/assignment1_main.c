@@ -232,39 +232,12 @@ course *read_courses(FILE *fp, int *num_courses){
                 cur_course->num_students = mmgr_malloc(g_MEM, (sizeof(int) * cur_course->num_sections));
                 debugf(DEBUG_LEVEL_MMGR, "course %s num_students array allocated\n", cur_course->course_name);
 
-                for(int sect = 0; sect < cur_course->num_sections; sect++) {
+                fscanf(fp, "%d %d", &cur_course->num_students[sect], &cur_course->num_scores[sect]);
+                debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", cur_course->num_students[sect], cur_course->num_scores[sect], sect);
 
-                        fscanf(fp, "%d %d", &cur_course->num_students[sect], &cur_course->num_scores[sect]);
-                        debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", cur_course->num_students[sect], cur_course->num_scores[sect], sect);
+                debugf(DEBUG_LEVEL_LOGIC, "will now parse %d students in section %d\n", cur_course->num_students[sect], sect);
 
-                        cur_course->sections[sect] = (student*) mmgr_malloc(g_MEM, (sizeof(student*) * *cur_course->num_students));
-
-                        debugf(DEBUG_LEVEL_LOGIC, "will now parse %d students in section %d\n", cur_course->num_students[sect], sect);
-                        for(int stu = 0; stu < cur_course->num_students[sect]; stu++) {
-                                cur_course->sections[sect][stu].scores = (float*) mmgr_malloc(g_MEM, (sizeof(float) * cur_course->num_scores[sect]));
-                                cur_course->sections[sect][stu].lname = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
-
-                                fscanf(fp, " %d", &cur_course->sections[sect][stu].id);
-                                debugf(DEBUG_LEVEL_LOGIC, "read student ID: %d\n", cur_course->sections[sect][stu].id);
-
-                                fscanf(fp, " %s", cur_course->sections[sect][stu].lname);
-                                debugf(DEBUG_LEVEL_LOGIC, "read student name: %s\n", cur_course->sections[sect][stu].lname);
-
-                                float avg = 0;
-
-                                for(int score = 0; score < cur_course->num_scores[sect]; score++) {
-                                        fscanf(fp, " %f", &cur_course->sections[sect][stu].scores[score]);
-                                        debugf(DEBUG_LEVEL_LOGIC, "read student score: %f\n", cur_course->sections[sect][stu].scores[score]);
-                                        avg += cur_course->sections[sect][stu].scores[score];
-                                }
-
-                                cur_course->sections[sect][stu].std_avg = avg / cur_course->num_scores[sect];
-                                debugf(DEBUG_LEVEL_LOGIC, "calc student average: %f\n", cur_course->sections[sect][stu].std_avg);
-
-                        }
-
-
-                }
+                cur_course->sections = read_sections();
 
                 courses[i] = *cur_course;
                 debugf(DEBUG_LEVEL_LOGIC, "course %d appended to courses array\n", i);
@@ -286,9 +259,35 @@ course *read_courses(FILE *fp, int *num_courses){
    Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
-        student **placeholder = (student**) mmgr_malloc(g_MEM, sizeof(student**));
+        student **sections = (student**) mmgr_malloc(g_MEM, (sizeof(student) * num_sections));
+        
+        for(int sect = 0; sect < num_sections; sect++) {
 
-        return placeholder;
+                debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", num_students[sect], num_scores[sect], sect);
+
+                debugf(DEBUG_LEVEL_LOGIC, "will now parse %d students in section %d\n", num_students[sect], sect);
+                for(int stu = 0; stu < num_students[sect]; stu++) {
+                        sections[sect][stu].scores = (float*) mmgr_malloc(g_MEM, (sizeof(float) * num_scores[sect]));
+                        sections[sect][stu].lname = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
+
+                        fscanf(fp, " %d", &sections[sect][stu].id);
+                        debugf(DEBUG_LEVEL_LOGIC, "read student ID: %d\n", sections[sect][stu].id);
+
+                        fscanf(fp, " %s", sections[sect][stu].lname);
+                        debugf(DEBUG_LEVEL_LOGIC, "read student name: %s\n", sections[sect][stu].lname);
+
+                        float avg = 0;
+
+                        for(int score = 0; score < num_scores[sect]; score++) {
+                                fscanf(fp, " %f", &sections[sect][stu].scores[score]);
+                                debugf(DEBUG_LEVEL_LOGIC, "read student score: %f\n", sections[sect][stu].scores[score]);
+                                avg += sections[sect][stu].scores[score];
+                        }
+
+                        sections[sect][stu].std_avg = avg / num_scores[sect];
+                        debugf(DEBUG_LEVEL_LOGIC, "calc student average: %f\n", sections[sect][stu].std_avg);
+                }
+        }
 }
 
 /*
@@ -318,6 +317,9 @@ void process_courses(course *courses, int num_courses){
    all the memory allocated within it. You can create more function as needed to
    ease the process.
  */
+
+// N.B. anything not explicitly removed by release_courses will be garbage collected
+// in the memory manager's cleanup routine.
 void release_courses(course *courses, int num_courses){
         for(int i = 0; i < num_courses; i++) {
                 for(int j = 0; j < courses[i].num_sections; j++) {
@@ -437,7 +439,7 @@ void mmgr_free(MMGR *tbl, void* handle){
                         tbl->numFree++;
 
                         free(target->handle);
-                        
+
                         target->size = 0;
 
                         tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree + 1)));
