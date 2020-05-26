@@ -261,96 +261,110 @@ void release_courses(course *courses, int num_courses){
 
 ////////////////////////// Memory manager //////////////////////////
 
-MemMgr_Table *mmgr_init(){
-        MemMgr_Table *table = malloc(sizeof(MemMgr_Table));
+// This is the initial version of my C memory manager.
+// At the moment it's very rudimentary.
 
-        table->free = NULL;
-        table->numFree = 0;
+// Initializes the memory manager's global state table. This tracks all allocated
+// memory, reallocates freed entries, and ensures that all allocated memory is
+// completely cleaned up on program termination.
+// In the future, I'll spawn a worker thread to performs automated garbage
+// collection through mark and sweep or simple refcounting.
+MMGR *mmgr_init(){
+        MMGR *state_table = malloc(sizeof(MMGR));
 
-        table->entries = NULL;
-        table->numEntries = 0;
+        state_table->free = NULL;
+        state_table->numFree = 0;
 
-        table->mutex = 0;
+        state_table->entries = NULL;
+        state_table->numEntries = 0;
+
+        state_table->mutex = 0;
 
         debugf("mmgr: initialized\n");
 
-        return table;
+        return state_table;
 }
 
-void *mmgr_malloc(MemMgr_Table *t, size_t size){
-        mmgr_mutex_acquire(t);
+// Allocate memory and maintain a reference in the memory manager's state table
+// If any previously allocated entries have since been freed, these will be
+// resized and reallocated to serve the request
+void *mmgr_malloc(MMGR *tbl, size_t size){
+        mmgr_mutex_acquire(tbl);
 
-        MemMgr_Entry* target;
+        MMGR_Entry* target;
 
-        // todo: if an index is at the very end of the entries array, shrink the entire array
-        if(t->numFree > 0) {
-                debugf("mmgr: found reusable previously allocated entry %p\n", t->entries[t->free[t->numFree - 1]]);
+        // If freed entries are available, we can recycle them
+        if(tbl->numFree > 0) {
+                int tgt_idx = tbl->free[tbl->numFree - 1];
 
-                int targetIdx = t->free[t->numFree - 1];
+                debugf("mmgr: found reusable previously allocated entry %p\n", tbl->entries[tgt_idx]);
 
-                target = (MemMgr_Entry*) realloc(t->entries[targetIdx], sizeof(MemMgr_Entry) + size);
+                target = (MMGR_Entry*) realloc(tbl->entries[tgt_idx], sizeof(MMGR_Entry) + size);
                 target->size = size;
 
-                t->entries[targetIdx] = target;
+                tbl->entries[tgt_idx] = target;
 
-                t->free = (int*) realloc(t->free, (sizeof(int) * (t->numFree - 1)));
+                tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree - 1)));
 
-                t->numFree--;
+                tbl->numFree--;
 
                 debugf("mmgr: reallocated %lu bytes\n", size);
 
+                // Otherwise the state table will need to be resized to accommodate a new
+                // entry
         } else {
                 debugf("mmgr: no recyclable entries available, increasing table size\n");
 
-                t->entries = (MemMgr_Entry**) realloc(t->entries, (sizeof(MemMgr_Entry*) * (t->numEntries + 1)));
+                tbl->entries = (MMGR_Entry**) realloc(tbl->entries, (sizeof(MMGR_Entry*) * (tbl->numEntries + 1)));
 
-                t->entries[t->numEntries] = (MemMgr_Entry*) malloc(sizeof(MemMgr_Entry) + size);
+                tbl->entries[tbl->numEntries] = (MMGR_Entry*) malloc(sizeof(MMGR_Entry) + size);
 
-                target = t->entries[t->numEntries];
+                target = tbl->entries[tbl->numEntries];
 
                 target->handle = malloc(size);
                 target->size = size;
 
-                t->numEntries++;
+                tbl->numEntries++;
 
                 debugf("mmgr: allocated %lu bytes, handle is %p\n", target->size, target->handle);
         }
 
-        mmgr_mutex_release(t);
+        mmgr_mutex_release(tbl);
 
         return target->handle;
 }
 
-
-void mmgr_free(MemMgr_Table *t, void* handle){
-        mmgr_mutex_acquire(t);
+// Frees the provided pointer and checks out the active entry in the g_MEM
+// state table so that it can be reallocated
+void mmgr_free(MMGR *tbl, void* handle){
+        mmgr_mutex_acquire(tbl);
 
         int found = 0;
 
-        debugf("mmgr: num active entries is %d, called to free %p\n", t->numEntries, handle);
+        debugf("mmgr: num active entries is %d, called to free %p\n", tbl->numEntries, handle);
 
-        for(int i = t->numEntries; i--> 0; ) {
+        for(int i = tbl->numEntries; i--> 0; ) {
                 if(handle == NULL) {
                         debugf("mmgr: provided NULL handle! no-op\n");
                         break;
                 }
 
-                if(t->entries[i]->handle == handle) {
+                if(tbl->entries[i]->handle == handle) {
                         debugf("mmgr: found handle %p at index %d\n", handle, i);
 
-                        MemMgr_Entry* target = t->entries[i];
+                        MMGR_Entry* target = tbl->entries[i];
 
-                        t->numFree++;
+                        tbl->numFree++;
 
                         free(target->handle);
                         target->size = 0;
 
-                        t->free = (int*) realloc(t->free, (sizeof(int) * (t->numFree + 1)));
-                        t->free[t->numFree] = i;
+                        tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree + 1)));
+                        tbl->free[tbl->numFree] = i;
 
                         found = 1;
 
-                        debugf("mmgr: freed %p, %d entries remain active\n", handle, t->numEntries);
+                        debugf("mmgr: freed %p, %d entries remain active\n", handle, tbl->numEntries);
                         break;
                 }
         }
@@ -358,36 +372,40 @@ void mmgr_free(MemMgr_Table *t, void* handle){
         if(found == 0)
                 debugf("mmgr: called to free %p but couldn't find it, no-op\n", handle);
 
-        mmgr_mutex_release(t);
+        mmgr_mutex_release(tbl);
 }
 
-void mmgr_cleanup(MemMgr_Table *t){
-        mmgr_mutex_acquire(t);
+// Cleans up any remaining allocated memory, then frees the state table
+void mmgr_cleanup(MMGR *tbl){
+        mmgr_mutex_acquire(tbl);
 
         int deEn = 0, deFr = 0;
 
         debugf("mmgr: cleaning up\n");
 
-        for(int i = 0; i < t->numEntries; i++) {
-                if(t->entries[i] != NULL) {
-                        free(t->entries[i]->handle);
-                        free(t->entries[i]);
+        // Free all active entries and what they're pointing to
+        for(int i = 0; i < tbl->numEntries; i++) {
+                if(tbl->entries[i] != NULL) {
+                        free(tbl->entries[i]->handle);
+                        free(tbl->entries[i]);
                         deEn++;
                 }
         }
 
-        debugf("mmgr: cleanup deallocd %d of %d active, %d of %d free entries\n", deEn, (t->numEntries - t->numFree), deFr, t->numFree);
+        debugf("mmgr: cleanup deallocd %d of %d active, %d of %d free entries\n", deEn, (tbl->numEntries - tbl->numFree), deFr, tbl->numFree);
 
-        free(t->entries);
-        free(t->free);
-        free(t);
+        free(tbl->entries);
+        free(tbl->free);
+        free(tbl);
 }
 
-void mmgr_mutex_acquire(MemMgr_Table *t){
-        while (t->mutex == 1);
-        t->mutex = 1;
+// Mutex acquisition/release helpers to atomicize access to the memory manager's
+// state table. Not really necessary atm but eventually I might play with threading
+void mmgr_mutex_acquire(MMGR *tbl){
+        while (tbl->mutex == 1);
+        tbl->mutex = 1;
 }
 
-void mmgr_mutex_release(MemMgr_Table *t){
-        t->mutex = 0;
+void mmgr_mutex_release(MMGR *tbl){
+        tbl->mutex = 0;
 }
