@@ -3,8 +3,8 @@
  */
 
 #include  <stdlib.h>
-#include  "leak_detector_c.c"
-#include  "leak_detector_c.h"
+#include <string.h>
+//#include  "leak_detector_c.h"
 #include <stdio.h>
 
 // debugf.h
@@ -16,7 +16,7 @@
   #define debugf(fmt, ...) ((void)0)
 #endif
 
-#define FILENAME "in.txt"
+#define INFILE_NAME "in.txt"
 
 //// Type definitions
 
@@ -34,31 +34,246 @@ typedef struct course {
         int *num_students; //stores array of number of students in each section. Size is num_sections; int *num_scores; //stores array of number of assignments in each section. Size is num_sections;
 } course;
 
-//// Function Prototypes
+typedef struct FileMeta {
+        int numTestCases;
+        int* testCaseNumCourses;
+
+} FileMeta;
+
+typedef struct MemMgr_Entry {
+        void* handle;
+        size_t size;
+        // todo: refcounts, passive gc sweeps
+} MemMgr_Entry;
+
+typedef struct MemMgr_Table {
+        // todo: reimplement w/ hash tables
+        MemMgr_Entry **entries;
+        int numEntries;
+        int *free;
+        int numFree;
+        volatile int mutex;
+} MemMgr_Table;
+
+//// Required Function Prototypes
 
 course *read_courses(FILE *fp, int *num_courses);
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections);
 void process_courses(course *courses, int num_courses);
 void release_courses(course *courses, int num_courses);
 
+// My function prototypes
+
+FileMeta* read_file_meta(FILE *fp);
+
+// Prototypes for my memory manager
+MemMgr_Table *mmgr_init();
+void *mmgr_malloc(MemMgr_Table *t, size_t size);
+void mmgr_free(MemMgr_Table *t, void* handle);
+void mmgr_cleanup(MemMgr_Table *t);
+void mmgr_mutex_acquire(MemMgr_Table *t);
+void mmgr_mutex_release(MemMgr_Table *t);
+
 //// Entry
+
+MemMgr_Table* global_MEM;
 
 int main(){
         FILE *infile;
-        
-        infile = fopen(FILENAME, "r");
+
+        debugf("Memory leak detector called.\n");
+//        atexit(report_mem_leak); //memory leak detection
+
+        infile = fopen(INFILE_NAME, "r");
         if (infile == NULL)
         {
-          printf("Failed to open input file %s\n", FILENAME);
-          return 1;
+                printf("Failed to open input file %s\n", INFILE_NAME);
+                return 1;
         }
-
 
         debugf("Started!\n");
 
-        atexit(report_mem_leak); //memory leak detection
-        
+        global_MEM = mmgr_init();
+
+        char* name1 = mmgr_malloc(global_MEM, sizeof(char*) * 9);
+        char* name2 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
+
+        printf("[%p %p]\n", name1, name2);
+
+        debugf("let's use them pointers\n");
+
+        strcpy(name1, "charlton");
+        strcpy(name2, "trezevant");
+
+        debugf("copied\n");
+
+        printf("[%p %p]\n", name1, name2);
+        printf("[%s %s]\n", name1, name2);
+
+        debugf("printed\n");
+
+        debugf("let's free them pointers\n");
+
+        mmgr_free(global_MEM, name1);
+        mmgr_free(global_MEM, name2);
+
+        debugf("let's reuse one of them pointers\n");
+
+        char* name3 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
+        strcpy(name3, "teezevang");
+
+        char* name4 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
+        strcpy(name4, "teezevago");
+
+        char* name5 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
+        strcpy(name5, "tersevono");
+
+        printf("[%p %p %p]\n", name3, name4, name5);
+        printf("[%s %s %s]\n", name3, name4, name5);
+
+        debugf("let's clean up\n");
+
+        mmgr_cleanup(global_MEM);
+
+        fclose(infile);
+
         return 0;
+}
+
+/*FileMeta* read_file_meta(FILE *fp){
+        FileMeta* meta = (FileMeta*) mmgr_malloc(global_MEM, sizeof(FileMeta));
+
+
+   }*/
+
+MemMgr_Table *mmgr_init(){
+        MemMgr_Table *table = malloc(sizeof(MemMgr_Table));
+
+        table->free = NULL;
+        table->numFree = 0;
+
+        table->entries = NULL;
+        table->numEntries = 0;
+
+        table->mutex = 0;
+
+        debugf("mmgr: initialized\n");
+
+        return table;
+}
+
+void *mmgr_malloc(MemMgr_Table *t, size_t size){
+        mmgr_mutex_acquire(t);
+
+        MemMgr_Entry* target;
+
+        if(t->numFree > 0) {
+                debugf("mmgr: found reusable previously allocated entry %p\n", t->entries[t->free[t->numFree - 1]]);
+
+                int targetIdx = t->free[t->numFree - 1];
+
+                target = (MemMgr_Entry*) realloc(t->entries[targetIdx], sizeof(MemMgr_Entry) + size);
+                target->size = size;
+                
+                t->entries[targetIdx] = target;
+
+                t->free = (int*) realloc(t->free, (sizeof(int*) * (t->numFree - 1)));
+                
+                t->numFree--;
+                
+                debugf("mmgr: reallocated %lu bytes\n", size);
+
+        } else {
+                debugf("mmgr: no recyclable entries available, increasing table size\n");
+
+                t->entries = (MemMgr_Entry**) realloc(t->entries, (sizeof(MemMgr_Entry**) * (t->numEntries + 1)));
+
+                t->entries[t->numEntries] = (MemMgr_Entry*) malloc(sizeof(MemMgr_Entry) + size);
+
+                target = t->entries[t->numEntries];
+
+                target->handle = malloc(size);
+                target->size = size;
+
+                t->numEntries++;
+
+                debugf("mmgr: allocated %lu bytes, handle is %p\n", target->size, target->handle);
+        }
+
+        mmgr_mutex_release(t);
+
+        return target->handle;
+}
+
+
+void mmgr_free(MemMgr_Table *t, void* handle){
+        mmgr_mutex_acquire(t);
+
+        int found = 0;
+
+        debugf("mmgr: num active entries is %d, called to free %p\n", t->numEntries, handle);
+
+        for(int i = t->numEntries; i--> 0; ) {
+                if(handle == NULL) {
+                        debugf("mmgr: provided NULL handle! no-op\n");
+                        break;
+                }
+
+                if(t->entries[i]->handle == handle) {
+                        debugf("mmgr: found handle %p at index %d\n", handle, i);
+
+                        MemMgr_Entry* target = t->entries[i];
+
+                        t->numFree++;
+
+                        free(target->handle);
+                        target->size = 0;
+
+                        t->free = (int*) realloc(t->free, (sizeof(int**) * (t->numFree + 1)));
+                        t->free[t->numFree] = i;
+
+                        found = 1;
+
+                        debugf("mmgr: freed %p, %d entries remain active\n", handle, t->numEntries);
+                        break;
+                }
+        }
+
+        if(found == 0)
+                debugf("mmgr: called to free %p but couldn't find it, no-op\n", handle);
+
+        mmgr_mutex_release(t);
+}
+
+void mmgr_cleanup(MemMgr_Table *t){
+        mmgr_mutex_acquire(t);
+
+        int deEn = 0, deFr = 0;
+
+        debugf("mmgr: cleaning up\n");
+
+        for(int i = 0; i < t->numEntries; i++) {
+                if(t->entries[i] != NULL) {
+                        free(t->entries[i]->handle);
+                        free(t->entries[i]);
+                        deEn++;
+                }
+        }
+
+        debugf("mmgr: cleanup deallocd %d of %d active, %d of %d free entries\n", deEn, (t->numEntries - t->numFree), deFr, t->numFree);
+
+        free(t->entries);
+        free(t->free);
+        free(t);
+}
+
+void mmgr_mutex_acquire(MemMgr_Table *t){
+        while (t->mutex == 1);
+        t->mutex = 1;
+}
+
+void mmgr_mutex_release(MemMgr_Table *t){
+        t->mutex = 0;
 }
 
 /*
@@ -71,9 +286,9 @@ int main(){
    for courses and nothing more.
  */
 course *read_courses(FILE *fp, int *num_courses){
-  course *placeholder = malloc(sizeof(student**));
+        course *placeholder = malloc(sizeof(student**));
 
-  return placeholder;
+        return placeholder;
 
 /*
    Course format
@@ -117,9 +332,9 @@ course *read_courses(FILE *fp, int *num_courses){
    Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
-  student **placeholder = malloc(sizeof(student**));
+        student **placeholder = malloc(sizeof(student**));
 
-  return placeholder;
+        return placeholder;
 }
 
 /*
