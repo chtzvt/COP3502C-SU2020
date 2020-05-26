@@ -207,54 +207,62 @@ void panic(const char * fmt, ...){
 course *read_courses(FILE *fp, int *num_courses){
         course *courses = (course*) mmgr_malloc(g_MEM, (sizeof(course*) * *num_courses));
 
-        debugf("will now parse %d courses\n", *num_courses);
+        debugf(DEBUG_LEVEL_LOGIC, "will now parse %d courses\n", *num_courses);
         for(int i = 0; i < *num_courses; i++) {
+                debugf(DEBUG_LEVEL_LOGIC, "begin parsing course %d of %d\n", i, *num_courses);
+
                 if(feof(fp))
                         panic("invalid input file format: course %d\n", i+1);
 
                 course* cur_course = (course*) mmgr_malloc(g_MEM, sizeof(course));
-                debugf("allocated memory to hold course %d\n", i);
+                debugf(DEBUG_LEVEL_MMGR, "allocated memory to hold course %d\n", i);
 
                 cur_course->course_name = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
-                debugf("course %d name array allocated\n", i);
+                debugf(DEBUG_LEVEL_MMGR, "course %d name array allocated\n", i);
 
                 // Fetch number of courses in current case
                 fscanf(fp, "%s", cur_course->course_name);
-                debugf("read course name for %d: %s\n", i, cur_course->course_name);
+                debugf(DEBUG_LEVEL_LOGIC, "read course name for %d: %s\n", i, cur_course->course_name);
                 fscanf(fp, "%d", &cur_course->num_sections);
-                debugf("course %s has %d sections\n", cur_course->course_name, cur_course->num_sections);
+                debugf(DEBUG_LEVEL_LOGIC, "course %s has %d sections\n", cur_course->course_name, cur_course->num_sections);
 
                 cur_course->sections = mmgr_malloc(g_MEM, (sizeof(student*) * cur_course->num_sections));
-                debugf("course %s sections array allocated\n", cur_course->course_name);
+                debugf(DEBUG_LEVEL_MMGR, "course %s sections array allocated\n", cur_course->course_name);
+
+                cur_course->num_scores = mmgr_malloc(g_MEM, (sizeof(int) * cur_course->num_sections));
+                debugf(DEBUG_LEVEL_MMGR, "course %s num_scores array allocated\n", cur_course->course_name);
+
+                cur_course->num_students = mmgr_malloc(g_MEM, (sizeof(int) * cur_course->num_sections));
+                debugf(DEBUG_LEVEL_MMGR, "course %s num_students array allocated\n", cur_course->course_name);
 
                 for(int sect = 0; sect < cur_course->num_sections; sect++) {
 
-                        fscanf(fp, "%d %d", cur_course->num_students, &cur_course->num_scores[sect]);
-                        debugf("expecting %d students and %d scores in section %d\n", *cur_course->num_students, cur_course->num_scores[sect], sect);
+                        fscanf(fp, "%d %d", &cur_course->num_students[sect], &cur_course->num_scores[sect]);
+                        debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", cur_course->num_students[sect], cur_course->num_scores[sect], sect);
 
-                        cur_course->sections[sect] = mmgr_malloc(g_MEM, (sizeof(student) * *cur_course->num_students));
+                        cur_course->sections[sect] = (student*) mmgr_malloc(g_MEM, (sizeof(student*) * *cur_course->num_students));
 
-                        debugf("will now parse %d students in section %d\n", *cur_course->num_students, sect);
-                        for(int stu = 0; stu < *cur_course->num_students; stu++) {
-                                cur_course->sections[sect][stu].scores = mmgr_malloc(g_MEM, (sizeof(float) * cur_course->num_scores[sect]));
-                                cur_course->sections[sect][stu].lname = mmgr_malloc(g_MEM, (sizeof(char) * 21));
+                        debugf(DEBUG_LEVEL_LOGIC, "will now parse %d students in section %d\n", cur_course->num_students[sect], sect);
+                        for(int stu = 0; stu < cur_course->num_students[sect]; stu++) {
+                                cur_course->sections[sect][stu].scores = (float*) mmgr_malloc(g_MEM, (sizeof(float) * cur_course->num_scores[sect]));
+                                cur_course->sections[sect][stu].lname = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
 
-                                fscanf(fp, "%d", &cur_course->sections[sect][stu].id);
-                                debugf("read student ID: %d\n", cur_course->sections[sect][stu].id);
+                                fscanf(fp, " %d", &cur_course->sections[sect][stu].id);
+                                debugf(DEBUG_LEVEL_LOGIC, "read student ID: %d\n", cur_course->sections[sect][stu].id);
 
-                                fscanf(fp, "%s", cur_course->sections[sect][stu].lname);
-                                debugf("read student name: %s\n", cur_course->sections[sect][stu].lname);
+                                fscanf(fp, " %s", cur_course->sections[sect][stu].lname);
+                                debugf(DEBUG_LEVEL_LOGIC, "read student name: %s\n", cur_course->sections[sect][stu].lname);
 
                                 float avg = 0;
 
                                 for(int score = 0; score < cur_course->num_scores[sect]; score++) {
-                                        fscanf(fp, "%f", &cur_course->sections[sect][stu].scores[score]);
-                                        debugf("read student score: %f\n", cur_course->sections[sect][stu].scores[score]);
+                                        fscanf(fp, " %f", &cur_course->sections[sect][stu].scores[score]);
+                                        debugf(DEBUG_LEVEL_LOGIC, "read student score: %f\n", cur_course->sections[sect][stu].scores[score]);
                                         avg += cur_course->sections[sect][stu].scores[score];
                                 }
 
                                 cur_course->sections[sect][stu].std_avg = avg / cur_course->num_scores[sect];
-                                debugf("calc student average: %f\n", cur_course->sections[sect][stu].std_avg);
+                                debugf(DEBUG_LEVEL_LOGIC, "calc student average: %f\n", cur_course->sections[sect][stu].std_avg);
 
                         }
 
