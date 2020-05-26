@@ -143,6 +143,14 @@ int main(){
         return 0;
 }
 
+void panic(const char * fmt, ...){
+        va_list vargs;
+        va_start(vargs, fmt);
+        vfprintf(stderr, fmt, vargs);
+        fflush(stderr);
+        va_end(vargs);
+        mmgr_cleanup(g_MEM);
+        exit(1);
 }
 
 
