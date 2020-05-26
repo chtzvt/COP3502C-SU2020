@@ -192,21 +192,25 @@ void panic(const char * fmt, ...){
 course *read_courses(FILE *fp, int *num_courses){
         course *courses = (course*) mmgr_malloc(g_MEM, (sizeof(course*) * *num_courses));
 
-        debugf("will now parse %d coursess\n", *num_courses);
+        debugf("will now parse %d courses\n", *num_courses);
         for(int i = 0; i < *num_courses; i++) {
                 if(feof(fp))
                         panic("invalid input file format: course %d\n", i+1);
 
                 course* cur_course = (course*) mmgr_malloc(g_MEM, sizeof(course));
+                debugf("allocated memory to hold course %d\n", i);
+                
                 cur_course->course_name = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
-
+                debugf("course %d name array allocated\n", i);
+                
                 // Fetch number of courses in current case
                 fscanf(fp, "%s", cur_course->course_name);
-                debugf("read course name: %s\n", cur_course->course_name);
+                debugf("read course name for %d: %s\n", i, cur_course->course_name);
                 fscanf(fp, "%d", &cur_course->num_sections);
                 debugf("course %s has %d sections\n", cur_course->course_name, cur_course->num_sections);
 
                 cur_course->sections = mmgr_malloc(g_MEM, (sizeof(student*) * cur_course->num_sections));
+                debugf("course %s sections array allocated\n", cur_course->course_name);
 
                 for(int sect = 0; sect < cur_course->num_sections; sect++) {
 
