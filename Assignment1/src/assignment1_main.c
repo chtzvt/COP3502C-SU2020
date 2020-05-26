@@ -436,7 +436,7 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
 
                 tbl->numEntries++;
 
-                //debugf(DEBUG_LEVEL_MMGR, "mmgr: allocated %lu bytes, handle is %p\n", tbl->entries[tbl->numEntries]->size, handle);
+                debugf(DEBUG_LEVEL_MMGR, "mmgr: allocated %lu bytes, handle is %p\n", size, handle);
         }
 
         mmgr_mutex_release(tbl);
