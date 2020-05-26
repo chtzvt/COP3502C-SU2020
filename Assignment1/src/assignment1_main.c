@@ -2,8 +2,6 @@
    This program is written by: Charlton Trezevant (PID 4383060)
  */
 
-#include  <stdlib.h>
-#include <string.h>
 
 /*
    The provided leak detector causes compiler warnings and, somewhat ironically,
@@ -39,6 +37,10 @@
  */
 
 #include <stdio.h>
+#include  <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include  "leak_detector_c.h"
 
 // debugf.h
 // (c) Charlton Trezevant - 2018
