@@ -67,14 +67,6 @@ typedef struct course {
         int *num_scores; //stores array of number of assignments in each section. Size is num_sections;
 } course;
 
-typedef struct FileMeta {
-        int numTestCases;
-        int* testCaseNumCourses;
-
-} FileMeta;
-
-
-//// Required Function Prototypes
 
 course *read_courses(FILE *fp, int *num_courses);
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections);
@@ -82,9 +74,6 @@ void process_courses(course *courses, int num_courses);
 void release_courses(course *courses, int num_courses);
 
 // My function prototypes
-
-FileMeta* read_file_meta(FILE *fp);
-
 // Prototypes for my memory manager
 // Rave reviews:
 // ==3291== All heap blocks were freed -- no leaks are possible
@@ -143,10 +132,6 @@ int main(){
         return 0;
 }
 
-FileMeta* read_file_meta(FILE *fp){
-        FileMeta* meta = (FileMeta*) mmgr_malloc(global_MEM, sizeof(FileMeta));
-
-        return meta;
 }
 
 
