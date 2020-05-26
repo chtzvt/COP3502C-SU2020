@@ -200,7 +200,7 @@ void panic(const char * fmt, ...){
    Note that you can call other functions from this function as needed.
  */
 course *read_courses(FILE *fp, int *num_courses){
-        course *courses = (course*) mmgr_malloc(g_MEM, (sizeof(course*) * *num_courses));
+        course *courses = (course*) mmgr_malloc(g_MEM, (sizeof(course) * *num_courses));
 
         debugf(DEBUG_LEVEL_LOGIC, "will now parse %d courses\n", *num_courses);
         for(int i = 0; i < *num_courses; i++) {
@@ -250,14 +250,14 @@ course *read_courses(FILE *fp, int *num_courses){
    Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
-        student **sections = mmgr_malloc(g_MEM, (sizeof(student*) * num_sections));
+        student **sections = (student**) mmgr_malloc(g_MEM, (sizeof(student*) * num_sections));
 
         for(int sect = 0; sect < num_sections; sect++) {
 
                 fscanf(fp, "%d %d", &num_students[sect], &num_scores[sect]);
                 debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", num_students[sect], num_scores[sect], sect);
 
-                sections[sect] = mmgr_malloc(g_MEM, (sizeof(student) * num_students[sect]));
+                sections[sect] = (student*) mmgr_malloc(g_MEM, (sizeof(student) * num_students[sect]));
                 debugf(DEBUG_LEVEL_MMGR, "allocated student section %d\n", sect);
 
                 debugf(DEBUG_LEVEL_LOGIC, "will now parse %d students in section %d\n", num_students[sect], sect);
