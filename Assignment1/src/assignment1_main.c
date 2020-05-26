@@ -120,24 +120,36 @@ MMGR* g_MEM;
 int main(){
         FILE *infile;
 
-        debugf("Memory leak detector called.\n");
+        debugf("Memory leak detector init.\n");
         atexit(report_mem_leak); //memory leak detection
 
-        global_MEM = mmgr_init();
+        g_MEM = mmgr_init();
 
         infile = fopen(INFILE_NAME, "r");
-        if (infile == NULL)
-        {
-                printf("Failed to open input file %s\n", INFILE_NAME);
+        if (infile == NULL) {
+                panic("Failed to open input file %s\n", INFILE_NAME);
                 return 1;
         }
 
+        int num_cases = -1;
 
+        if(!feof(infile))
+                fscanf(infile, "%d", &num_cases);
+        else
+                panic("invalid input file format: number of test cases unknown\n");
 
+        // Fetch number of test cases
+        for(int case_n = 0; case_n < num_cases; case_n++) {
+                int case_num_courses;
 
+                if(!feof(infile)) {
+                        // Fetch number of courses in current case
+                        fscanf(infile, "%d", &case_num_courses);
+                }
 
+        }
 
-        mmgr_cleanup(global_MEM);
+        mmgr_cleanup(g_MEM);
         fclose(infile);
 
         return 0;
