@@ -62,8 +62,9 @@ typedef struct student {
 typedef struct course {
         char *course_name; //stores course name
         int num_sections; //number of sections
-        student **sections; //stores array of student arrays(2D array). Size is num_sections;
-        int *num_students; //stores array of number of students in each section. Size is num_sections; int *num_scores; //stores array of number of assignments in each section. Size is num_sections;
+        student **sections;//stores array of student arrays(2D array). Size is num_sections;
+        int *num_students;//stores array of number of students in each section. Size is num_sections;
+        int *num_scores; //stores array of number of assignments in each section. Size is num_sections;
 } course;
 
 typedef struct FileMeta {
