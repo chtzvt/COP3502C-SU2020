@@ -401,6 +401,9 @@ MMGR *mmgr_init(){
 // If any previously allocated entries have since been freed, these will be
 // resized and reallocated to serve the request
 void *mmgr_malloc(MMGR *tbl, size_t size){
+        if(tbl == NULL)
+                return NULL;
+
         mmgr_mutex_acquire(tbl);
 
         void* handle = NULL;
@@ -448,6 +451,9 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
 // Frees the provided pointer and checks out the active entry in the g_MEM
 // state table so that it can be reallocated
 void mmgr_free(MMGR *tbl, void* handle){
+        if(tbl == NULL)
+                return;
+
         mmgr_mutex_acquire(tbl);
 
         int found = 0;
@@ -487,6 +493,9 @@ void mmgr_free(MMGR *tbl, void* handle){
 
 // Cleans up any remaining allocated memory, then frees the state table
 void mmgr_cleanup(MMGR *tbl){
+        if(tbl == NULL)
+                return;
+
         mmgr_mutex_acquire(tbl);
 
         int deEn = 0;
@@ -509,6 +518,8 @@ void mmgr_cleanup(MMGR *tbl){
         free(tbl->entries);
         free(tbl->free);
         free(tbl);
+
+        tbl = NULL;
 }
 
 // Mutex acquisition/release helpers to atomicize access to the memory manager's
