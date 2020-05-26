@@ -258,8 +258,6 @@ course *read_courses(FILE *fp, int *num_courses){
    and num_socres array of the course and returns 2D array of students that contains
    all the data for all the sections of a course. A good idea would be calling
    this function from the read_course function.
-
-   Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
         student **sections = (student**) mmgr_malloc(g_MEM, (sizeof(student*) * num_sections));
