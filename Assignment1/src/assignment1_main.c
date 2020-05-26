@@ -129,47 +129,9 @@ int main(){
                 return 1;
         }
 
-        debugf("Started!\n");
 
-        global_MEM = mmgr_init();
 
-        char* name1 = mmgr_malloc(global_MEM, sizeof(char*) * 9);
-        char* name2 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
 
-        printf("[%p %p]\n", name1, name2);
-
-        debugf("let's use them pointers\n");
-
-        strcpy(name1, "charlton");
-        strcpy(name2, "trezevant");
-
-        debugf("copied\n");
-
-        printf("[%p %p]\n", name1, name2);
-        printf("[%s %s]\n", name1, name2);
-
-        debugf("printed\n");
-
-        debugf("let's free them pointers\n");
-
-        mmgr_free(global_MEM, name1);
-        mmgr_free(global_MEM, name2);
-
-        debugf("let's reuse one of them pointers\n");
-
-        char* name3 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
-        strcpy(name3, "teezevang");
-
-        char* name4 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
-        strcpy(name4, "teezevago");
-
-        char* name5 = mmgr_malloc(global_MEM, sizeof(char*) * 10);
-        strcpy(name5, "tersevono");
-
-        printf("[%p %p %p]\n", name3, name4, name5);
-        printf("[%s %s %s]\n", name3, name4, name5);
-
-        debugf("let's clean up\n");
 
 
         mmgr_cleanup(global_MEM);
