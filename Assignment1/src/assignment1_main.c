@@ -132,7 +132,7 @@ int main(int argc, char **argv){
                 infile = fopen(INFILE_NAME, "r");
                 debugf("Input file name: %s\n", INFILE_NAME);
         }
-         
+
         if (infile == NULL) {
                 panic("Failed to open input file\n");
                 return 1;
@@ -155,14 +155,14 @@ int main(int argc, char **argv){
                         // Fetch number of courses in current case
                         fscanf(infile, "%d", &case_num_courses);
                         debugf("Infile contains %d courses for test case %d\n", case_num_courses, num_cases);
-                        
+
                         course* c = read_courses(infile, &case_num_courses);
                 }
 
         }
 
         debugf("Exiting...\n");
-        
+
         mmgr_cleanup(g_MEM);
         fclose(infile);
 
@@ -199,10 +199,10 @@ course *read_courses(FILE *fp, int *num_courses){
 
                 course* cur_course = (course*) mmgr_malloc(g_MEM, sizeof(course));
                 debugf("allocated memory to hold course %d\n", i);
-                
+
                 cur_course->course_name = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
                 debugf("course %d name array allocated\n", i);
-                
+
                 // Fetch number of courses in current case
                 fscanf(fp, "%s", cur_course->course_name);
                 debugf("read course name for %d: %s\n", i, cur_course->course_name);
