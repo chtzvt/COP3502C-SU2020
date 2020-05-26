@@ -174,13 +174,13 @@ void *mmgr_malloc(MemMgr_Table *t, size_t size){
 
                 target = (MemMgr_Entry*) realloc(t->entries[targetIdx], sizeof(MemMgr_Entry) + size);
                 target->size = size;
-                
+
                 t->entries[targetIdx] = target;
 
                 t->free = (int*) realloc(t->free, (sizeof(int*) * (t->numFree - 1)));
-                
+
                 t->numFree--;
-                
+
                 debugf("mmgr: reallocated %lu bytes\n", size);
 
         } else {
