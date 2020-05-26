@@ -223,21 +223,13 @@ course *read_courses(FILE *fp, int *num_courses){
                 fscanf(fp, "%d", &cur_course->num_sections);
                 debugf(DEBUG_LEVEL_LOGIC, "course %s has %d sections\n", cur_course->course_name, cur_course->num_sections);
 
-                cur_course->sections = mmgr_malloc(g_MEM, (sizeof(student*) * cur_course->num_sections));
-                debugf(DEBUG_LEVEL_MMGR, "course %s sections array allocated\n", cur_course->course_name);
-
                 cur_course->num_scores = mmgr_malloc(g_MEM, (sizeof(int) * cur_course->num_sections));
                 debugf(DEBUG_LEVEL_MMGR, "course %s num_scores array allocated\n", cur_course->course_name);
 
                 cur_course->num_students = mmgr_malloc(g_MEM, (sizeof(int) * cur_course->num_sections));
                 debugf(DEBUG_LEVEL_MMGR, "course %s num_students array allocated\n", cur_course->course_name);
 
-                fscanf(fp, "%d %d", &cur_course->num_students[sect], &cur_course->num_scores[sect]);
-                debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", cur_course->num_students[sect], cur_course->num_scores[sect], sect);
-
-                debugf(DEBUG_LEVEL_LOGIC, "will now parse %d students in section %d\n", cur_course->num_students[sect], sect);
-
-                cur_course->sections = read_sections();
+                cur_course->sections = read_sections(fp, cur_course->num_students, cur_course->num_scores, cur_course->num_sections);
 
                 courses[i] = *cur_course;
                 debugf(DEBUG_LEVEL_LOGIC, "course %d appended to courses array\n", i);
@@ -259,16 +251,22 @@ course *read_courses(FILE *fp, int *num_courses){
    Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
-        student **sections = (student**) mmgr_malloc(g_MEM, (sizeof(student) * num_sections));
+        student **sections = mmgr_malloc(g_MEM, (sizeof(student*) * num_sections));
         
         for(int sect = 0; sect < num_sections; sect++) {
-
+          
+                fscanf(fp, "%d %d", &num_students[sect], &num_scores[sect]);
                 debugf(DEBUG_LEVEL_LOGIC, "expecting %d students and %d scores in section %d\n", num_students[sect], num_scores[sect], sect);
+
+                sections[sect] = mmgr_malloc(g_MEM, (sizeof(student) * num_students[sect]));
+                debugf(DEBUG_LEVEL_MMGR, "allocated student section %d\n", sect);
 
                 debugf(DEBUG_LEVEL_LOGIC, "will now parse %d students in section %d\n", num_students[sect], sect);
                 for(int stu = 0; stu < num_students[sect]; stu++) {
                         sections[sect][stu].scores = (float*) mmgr_malloc(g_MEM, (sizeof(float) * num_scores[sect]));
+                        debugf(DEBUG_LEVEL_MMGR, "allocated student scores\n");
                         sections[sect][stu].lname = (char*) mmgr_malloc(g_MEM, (sizeof(char) * 21));
+                        debugf(DEBUG_LEVEL_MMGR, "allocated student lname\n");
 
                         fscanf(fp, " %d", &sections[sect][stu].id);
                         debugf(DEBUG_LEVEL_LOGIC, "read student ID: %d\n", sections[sect][stu].id);
