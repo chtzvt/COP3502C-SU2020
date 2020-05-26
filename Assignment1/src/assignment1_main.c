@@ -53,7 +53,7 @@
 
 #define INFILE_NAME "in.txt"
 
-//// Type definitions
+//// Project spec type definitions
 
 typedef struct student {
         int id;
@@ -70,13 +70,13 @@ typedef struct course {
         int *num_scores; //stores array of number of assignments in each section. Size is num_sections;
 } course;
 
+//// Project spec function prototypes
 
 course *read_courses(FILE *fp, int *num_courses);
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections);
 void process_courses(course *courses, int num_courses);
 void release_courses(course *courses, int num_courses);
 
-// My function prototypes
 // MMGR Type definitions/function prototypes
 // (c) Charlton Trezevant 2020
 // Rave reviews:
@@ -114,7 +114,8 @@ void panic(const char * format, ...);
 // Global memory manager instance
 MMGR* g_MEM;
 
-//// Entry
+
+////////////////////////// Entry //////////////////////////
 
 int main(){
         FILE *infile;
