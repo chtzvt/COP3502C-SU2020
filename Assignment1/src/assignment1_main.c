@@ -11,18 +11,18 @@
    output file.
 
    Valgrind output:
-   ==2024== HEAP SUMMARY:
-   ==2024==     in use at exit: 552 bytes in 1 blocks
-   ==2024==   total heap usage: 5 allocs, 4 frees, 5,512 bytes allocated
-   ==2024==
-   ==2024== 552 bytes in 1 blocks are still reachable in loss record 1 of 1
-   ==2024==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-   ==2024==    by 0x4EBAE49: __fopen_internal (iofopen.c:65)
-   ==2024==    by 0x4EBAE49: fopen@@GLIBC_2.2.5 (iofopen.c:89)
-   ==2024==    by 0x109765: report_mem_leak (in /home/net/ch123722/COP3502C/Assignment1/bin/assignment1)
-   ==2024==    by 0x4E7F040: __run_exit_handlers (exit.c:108)
-   ==2024==    by 0x4E7F139: exit (exit.c:139)
-   ==2024==    by 0x4E5DB9D: (below main) (libc-start.c:344)
+   HEAP SUMMARY:
+       in use at exit: 552 bytes in 1 blocks
+     total heap usage: 5 allocs, 4 frees, 5,512 bytes allocated
+   
+   552 bytes in 1 blocks are still reachable in loss record 1 of 1
+      at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+      by 0x4EBAE49: __fopen_internal (iofopen.c:65)
+      by 0x4EBAE49: fopen@@GLIBC_2.2.5 (iofopen.c:89)
+      by 0x109765: report_mem_leak (in /home/net/ch123722/COP3502C/Assignment1/bin/assignment1)
+      by 0x4E7F040: __run_exit_handlers (exit.c:108)
+      by 0x4E7F139: exit (exit.c:139)
+      by 0x4E5DB9D: (below main) (libc-start.c:344)
 
    My static analyzer also complains about this format string error:
 
