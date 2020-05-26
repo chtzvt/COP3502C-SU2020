@@ -206,7 +206,7 @@ course *read_courses(FILE *fp, int *num_courses){
    Translation: Primarily sounds like this is going to be the file parser.
  */
 student **read_sections(FILE *fp, int num_students[], int num_scores[], int num_sections){
-        student **placeholder = (student**) mmgr_malloc(global_MEM, sizeof(student**));
+        student **placeholder = (student**) mmgr_malloc(g_MEM, sizeof(student**));
 
         return placeholder;
 }
