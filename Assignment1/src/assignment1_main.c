@@ -440,6 +440,7 @@ void mmgr_free(MMGR *tbl, void* handle){
                         tbl->numFree++;
 
                         free(target->handle);
+                        target->handle = NULL;
 
                         target->size = 0;
 
@@ -465,18 +466,20 @@ void mmgr_cleanup(MMGR *tbl){
 
         int deEn = 0;
 
-        debugf(DEBUG_LEVEL_MMGR, "mmgr: cleaning up\n");
+        debugf(DEBUG_LEVEL_MMGR, "mmgr: cleaning up %d active entries\n", (tbl->numEntries - tbl->numFree));
 
         // Free all active entries and what they're pointing to
         for(int i = 0; i < tbl->numEntries; i++) {
                 if(tbl->entries[i] != NULL) {
-                        free(tbl->entries[i]->handle);
+                        if(tbl->entries[i]->handle != NULL)
+                          free(tbl->entries[i]->handle);
+                          
                         free(tbl->entries[i]);
                         deEn++;
                 }
         }
 
-        debugf(DEBUG_LEVEL_MMGR, "mmgr: cleanup deallocd %d of %d active entries\n", deEn, (tbl->numEntries - tbl->numFree));
+        debugf(DEBUG_LEVEL_MMGR, "mmgr: cleanup deallocd %d entries\n", deEn);
 
         free(tbl->entries);
         free(tbl->free);
