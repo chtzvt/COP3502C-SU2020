@@ -409,7 +409,7 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
         if(tbl->numFree > 0) {
                 int tgt_idx = tbl->free[tbl->numFree - 1];
 
-                debugf(DEBUG_LEVEL_MMGR, "mmgr: found reusable previously allocated entry %p\n", tbl->entries[tgt_idx]);
+                debugf(DEBUG_LEVEL_MMGR, "mmgr: found reusable previously allocated entry %d\n", tgt_idx);
 
                 tbl->entries[tgt_idx]->size = size;
                 tbl->entries[tgt_idx]->handle = calloc(1, size);
@@ -463,20 +463,18 @@ void mmgr_free(MMGR *tbl, void* handle){
                 if(tbl->entries[i]->handle == handle) {
                         debugf(DEBUG_LEVEL_MMGR, "mmgr: found handle %p at index %d\n", handle, i);
 
-                        MMGR_Entry* target = tbl->entries[i];
-
                         tbl->numFree++;
 
-                        free(target->handle);
-                        target->handle = NULL;
-                        target->size = 0;
+                        free(tbl->entries[i]->handle);
+                        tbl->entries[i]->handle = NULL;
+                        tbl->entries[i]->size = 0;
 
                         tbl->free = (int*) realloc(tbl->free, (sizeof(int) * (tbl->numFree + 1)));
-                        tbl->free[tbl->numFree] = i;
+                        tbl->free[tbl->numFree - 1] = i;
 
                         found = 1;
 
-                        debugf(DEBUG_LEVEL_MMGR, "mmgr: freed %p, %d entries remain active\n", handle, (tbl->numEntries - tbl->numFree));
+                        debugf(DEBUG_LEVEL_MMGR, "mmgr: freed %p at index %d, %d entries remain active\n", handle, i, (tbl->numEntries - tbl->numFree));
                         break;
                 }
         }
