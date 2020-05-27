@@ -336,7 +336,11 @@ void process_courses(course *courses, int num_courses){
         int pass_count = 0;
         float sa_tmp = 0, hs_tmp = 0;
         float* avgs_list;
-        student* hiscore;
+        student *hiscore;
+        
+        // Default hiscore placeholder
+        student hiscore_default = { .lname = "nobody", .id = 0, .scores = 0, .std_avg = 0 };
+        hiscore = &hiscore_default;
 
         // For all courses in the provided course pointer
         for(int i = 0; i < num_courses; i++) {
