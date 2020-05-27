@@ -50,7 +50,7 @@
 #define DEBUG_LEVEL_INFO 4
 #define DEBUG_LEVEL_NONE 99
 
-#define DEBUG DEBUG_LEVEL_NONE
+//#define DEBUG DEBUG_LEVEL_NONE
 
 #ifdef DEBUG
 #define debugf(lvl, fmt, ...) \
