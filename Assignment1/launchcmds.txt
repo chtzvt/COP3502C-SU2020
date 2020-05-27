@@ -1,0 +1,6 @@
+gasp:
+tar -czvf COP3502C.tgz COP3502C/* && scp -r COP3502C.tgz ch123722@eustis-gw.nhq:/home/net/ch123722/ && ssh ch123722@eustis-gw.nhq "rm -rf /home/net/ch123722/COP3502C && tar -xf COP3502C.tgz" && rm COP3502C.tgz
+
+Eustis:
+
+cd ~/COP3502C/Assignment1/ && gcc -static -g src/*.c -o bin/assignment1 && valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./bin/assignment1 2>&1 | tee test
