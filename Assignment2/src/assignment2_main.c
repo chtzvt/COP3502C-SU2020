@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "leak_detector_c.c"
+#include "leak_detector_c.h"
 
 // debugf.h
 // (c) Charlton Trezevant - 2018
