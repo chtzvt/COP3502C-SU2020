@@ -179,11 +179,11 @@ echo -e "\n--------------REPORT--------------\n"
 if [ ${#SUCCESSFUL_BUILDS[@]} -eq 0 ]
 then
   echo -e " No projects built successfully :("
-  EXCODE=0
+  EXCODE=1
 else
   echo -e " Projects with build successes:"
   printf '\t%s\n' "${SUCCESSFUL_BUILDS[@]}"
-  EXCODE=1
+  EXCODE=0
 fi
 
 if [ ${#FAILED_BUILDS[@]} -eq 0 ]
