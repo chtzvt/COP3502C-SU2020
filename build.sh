@@ -72,8 +72,11 @@ fi
 # This will ensure that Travis attempts to build only the latest changes, which is what we want
 CHANGED_DIRS=`git diff --name-only HEAD~$COMMIT_RANGE_LBOUND..HEAD "*.$SOURCE_FILE_EXT" | cut -d '/' -f1 | sed -e 's/^/.\//'`
 
-# We'll keep track of the number of build failures here
+# We'll keep track of the number of build successes/failures here
 FAILED_BUILDS=()
+SUCCESSFUL_BUILDS=()
+
+# Keep track of dirs that have already been built, so we don't build them twice
 FINISHED_BUILDS=()
 
 # Only attempt to run builds if there are changes
@@ -147,6 +150,7 @@ then
       if [ $(($LINT_PASS + $MAKE_PASS)) == 0 ]
       then
           echo -e "\n\t *** BUILD SUCCESS: $SUBDIR ***"
+          SUCCESSFUL_BUILDS+=("$SUBDIR")
       else
           echo -e "\n\t !!! BUILD FAILURE: $SUBDIR !!!"
           FAILED_BUILDS+=("$SUBDIR")
@@ -172,12 +176,21 @@ fi
 # Finally, display a summary of all builds performed, and how successful those were.
 # If any of our builds failed, we'll return the appropriate status code so Travis will know
 echo -e "\n--------------REPORT--------------\n"
+if [ ${#SUCCESSFUL_BUILDS[@]} -eq 0 ]
+then
+  echo -e " No projects built successfully :(\n"
+  EXCODE=0
+else
+  echo -e " Projects with build successes:"
+  printf '\t%s\n' "${SUCCESSFUL_BUILDS[@]}"
+  EXCODE=1
+fi
+
 if [ ${#FAILED_BUILDS[@]} -eq 0 ]
 then
   echo -e " All projects built successfully!"
   EXCODE=0
 else
-  echo -e " Some projects failed to build :(\n"
   echo -e " Projects with build failures:"
   printf '\t%s\n' "${FAILED_BUILDS[@]}"
   EXCODE=1
