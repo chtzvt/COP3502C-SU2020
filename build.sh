@@ -12,7 +12,7 @@ PRINT_SYSINFO=1
 RUN_LINTER=1
 
 # Extension used by your source code files (.c, .cpp, etc)
-SOURCE_FILE_EXT='*.c'
+SOURCE_FILE_EXT='c'
 
 # List of subdirectories to blacklist (in our case, never build the Template project)
 BLACKLIST_DIRS="Labs"
@@ -70,7 +70,7 @@ fi
 # Find subdirectories with new changes and makefiles (which we can then build and test), excluding the blacklist
 # CHANGED_DIRS will collect the list of new directories that contain new changes (in the past $COMMIT_RANGE_LBOUND commits) to source files
 # This will ensure that Travis attempts to build only the latest changes, which is what we want
-CHANGED_DIRS=`git diff --name-only HEAD~$COMMIT_RANGE_LBOUND..HEAD $SOURCE_FILE_EXT | cut -d '/' -f1 | sed -e 's/^/.\//'`
+CHANGED_DIRS=`git diff --name-only HEAD~$COMMIT_RANGE_LBOUND..HEAD "*.$SOURCE_FILE_EXT" | cut -d '/' -f1 | sed -e 's/^/.\//'`
 
 # We'll keep track of the number of build failures here
 FAILED_BUILDS=()
