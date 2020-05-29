@@ -67,6 +67,15 @@ Language versions:
 "
 fi
 
+REPO_TOTAL_COMMITS=`git rev-list --all --count`
+
+if [[ $COMMIT_RANGE_LBOUND -gt $REPO_TOTAL_COMMITS ]]
+then
+  echo -e "!! [Grok Notice] Configured commit lower bound ($COMMIT_RANGE_LBOUND) is greater than the total number of commits in this repo: $REPO_TOTAL_COMMITS"
+  COMMIT_RANGE_LBOUND=$(($REPO_TOTAL_COMMITS - 1))
+  echo -e "!! [Grok Notice] This value was overridden to: $COMMIT_RANGE_LBOUND"
+fi
+
 # Find subdirectories with new changes and makefiles (which we can then build and test), excluding the blacklist
 # CHANGED_DIRS will collect the list of new directories that contain new changes (in the past $COMMIT_RANGE_LBOUND commits) to source files
 # This will ensure that Travis attempts to build only the latest changes, which is what we want
@@ -109,7 +118,7 @@ then
       if [ $RUN_LINTER == 1 ] && [ `which scan-build` != "" ]
       then
         echo -e "\n>>> Running: static analysis (scan-build)"
-        scan-build gcc -std=c99 -c src/*
+        make lint
         LINT_PASS=$?
         echo -e ">>> FINISHED: static analysis (scan-build)"
       else
@@ -186,7 +195,7 @@ else
   EXCODE=0
 fi
 
-if [ ${#FAILED_BUILDS[@]} -eq 0 ]
+if [[ ${#FAILED_BUILDS[@]} -eq 0 && ${#SUCCESSFUL_BUILDS[@]} -ne 0 ]]
 then
   echo -e "\n All projects built successfully!"
   EXCODE=0
