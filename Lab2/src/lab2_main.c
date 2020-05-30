@@ -47,7 +47,7 @@ void insertToPlace(node* root, int val, int index){
         int i = 0;
 
         while(cursor != NULL) {
-                if(i == index || cursor->next == NULL) {
+                if(i == (index - 1) || cursor->next == NULL) {
                         temp = (node *) malloc(sizeof(node));
                         temp->data = val;
 
