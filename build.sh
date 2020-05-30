@@ -199,7 +199,7 @@ fi
 
 if [[ ${#SUCCESSFUL_BUILDS[@]} -gt 0 ]]
 then
-  echo -e " Projects with build successes:"
+  echo -e "\n Projects with build successes:"
   printf '\t%s\n' "${SUCCESSFUL_BUILDS[@]}"
   EXCODE=0
 fi
