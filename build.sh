@@ -193,11 +193,11 @@ fi
 
 if [[ ${#SUCCESSFUL_BUILDS[@]} -gt 0 && ${#FAILED_BUILDS[@]} -eq 0 ]]
 then
-  echo -e "\n All projects built successfully!"
+  echo -e " All projects built successfully!"
   EXCODE=0
 fi
 
-if [[ ${#FAILED_BUILDS[@]} -gt 0 ]]
+if [[ ${#SUCCESSFUL_BUILDS[@]} -gt 0 ]]
 then
   echo -e " Projects with build successes:"
   printf '\t%s\n' "${SUCCESSFUL_BUILDS[@]}"
