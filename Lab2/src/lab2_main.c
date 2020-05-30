@@ -82,7 +82,6 @@ int main()
 {
         node *root; //very important line. Otherwise all function will fail
         root = NULL; // suppress unused variable warning
-        node *t;
         int ch,ele, val, idx;
         while(1)
         {
