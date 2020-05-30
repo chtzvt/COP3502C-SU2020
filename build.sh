@@ -15,7 +15,7 @@ RUN_LINTER=1
 SOURCE_FILE_EXT='c'
 
 # List of subdirectories to blacklist (in our case, never build the Template project)
-BLACKLIST_DIRS="Labs"
+BLACKLIST_DIRS="Placeholder"
 
 # How many commits back should we check for changes to files? ("lower bound", default 10 commits)
 # Only source files with fresh changes that are within this range will be built
@@ -47,7 +47,7 @@ then
 echo -e "
 
 ----------------------------------
-Grok AutoBuild Script for Travis CI
+Grok AutoBuild Script for Everyone
   (c) 2017 Charlton Trezevant
 `date +'%A %b %d %Y %r'`
 ----------------------------------
@@ -185,21 +185,27 @@ fi
 # Finally, display a summary of all builds performed, and how successful those were.
 # If any of our builds failed, we'll return the appropriate status code so Travis will know
 echo -e "\n--------------REPORT--------------\n"
-if [ ${#SUCCESSFUL_BUILDS[@]} -eq 0 ]
+if [[ ${#SUCCESSFUL_BUILDS[@]} -eq 0 && ${#FAILED_BUILDS[@]} -gt 0 ]]
 then
   echo -e " No projects built successfully :("
   EXCODE=1
-else
+fi
+
+if [[ ${#SUCCESSFUL_BUILDS[@]} -gt 0 && ${#FAILED_BUILDS[@]} -eq 0 ]]
+then
+  echo -e "\n All projects built successfully!"
+  EXCODE=0
+fi
+
+if [[ ${#FAILED_BUILDS[@]} -gt 0 ]]
+then
   echo -e " Projects with build successes:"
   printf '\t%s\n' "${SUCCESSFUL_BUILDS[@]}"
   EXCODE=0
 fi
 
-if [[ ${#FAILED_BUILDS[@]} -eq 0 && ${#SUCCESSFUL_BUILDS[@]} -ne 0 ]]
+if [[ ${#FAILED_BUILDS[@]} -gt 0 ]]
 then
-  echo -e "\n All projects built successfully!"
-  EXCODE=0
-else
   echo -e "\n Projects with build failures:"
   printf '\t%s\n' "${FAILED_BUILDS[@]}"
   EXCODE=1
