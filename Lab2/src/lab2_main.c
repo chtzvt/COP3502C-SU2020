@@ -10,7 +10,7 @@ typedef struct node {
 }node;
 
 //this function takes an item and insert it in the linked list pointed by root.
-node*  insert_front(node *root, int item)
+node* insert_front(node *root, int item)
 {
         node *temp;
         //create a new node and fill-up the node
@@ -28,62 +28,43 @@ node*  insert_front(node *root, int item)
 
 }
 
-//this function takes an item and insert it in the end of the linked list
-node* insert_end(node* root, int item)
+node* reverse_list(node* root)
 {
-        node *t;
-        node *temp;
-        //create a new node and fill-up the node
-        temp= (node *) malloc(sizeof(node));
-        temp->data=item;
-        temp->next=NULL;
-        if(root==NULL) //if there is no node in the linked list, make temp as the root
-                root=temp;
-        else //there is an existing linked list and we need to traverse to reach the end node
-        {
-                t=root; //t is being used to start traversing
-                while(t->next!=NULL) //keep going till the end
-                        t=t->next;
+        node *cursor = root, *prev = NULL, *next = NULL;
 
-                t->next=temp; //t is at the last node of the linked list, so add temp after t.
+        while(cursor != NULL) {
+                next = cursor->next;
+                cursor->next = prev;
+                prev = cursor;
+                cursor = next;
         }
-        return root;
+
+        return prev;
 }
 
-/*this function deletes the first occurrence of a given item from linked list.
-   it returns the updated/original root
- */
-node* DelList(node *root, int item)
-{
-        node *t;
-        node *temp;
-        if(root==NULL) //if there is no linked list, just return root/null
-                return root;
-        if(root->data==item) //if root contains the item, remove the current root and change it to the next node
-        {
-                temp=root; //put existing root to temp so that we can free it. Otherwise, there will be memory leak
-                root=root->next; //change the root by the next node of the current root.
-                free(temp);
-                return root;
+void insertToPlace(node* root, int val, int index){
+        node *cursor = root, *temp, *prev;
+        int i = 0;
+
+        while(cursor != NULL) {
+                if(i == index || cursor->next == NULL) {
+                        temp = (node *) malloc(sizeof(node));
+                        temp->data = val;
+
+                        if(cursor->next != NULL) { // splice into list
+                                prev = cursor->next;
+                                cursor->next = temp;
+                                temp->next = prev;
+                        } else {
+                                cursor->next = temp; // append to end of list
+                        }
+                        
+                        break;
+                }
+                
+                i++;
+                cursor = cursor->next;
         }
-
-        //the code will reach here if the item is not in the root. So, we need to traverse.
-        t=root;
-
-        /*keep going until we reach to the end or we find the item.
-           note that we look ahead so that we will be one node before the node we will be deleting
-         */
-        while(t->next!=NULL && t->next->data != item)
-                t=t->next;
-        if(t->next==NULL) //if the above loop breaks for this reason, it means the item does not exist. So, return from the function
-                return root;
-        /*if the code reach here, it indicates the loop exited as the item was found
-           now, the node we want to delete is in t->next.*/
-
-        temp=t->next; //we will delete t->next. So, putting it in temp
-        t->next=t->next->next; //change the t->next to the the next of the node we will be deleting
-        free(temp);
-        return root;
 }
 
 void display(node* t)
@@ -102,38 +83,45 @@ int main()
         node *root; //very important line. Otherwise all function will fail
         root = NULL; // suppress unused variable warning
         node *t;
-        int ch,ele, del;
+        int ch,ele, val, idx;
         while(1)
         {
                 printf("\nMenu: 1. insert at front, 2. reverse list 3. Insert to place 0. exit: ");
                 scanf("%d",&ch);
-                switch(ch){
+                switch(ch) {
                 case 0:
                         printf("\nGOOD BYE\n");
                         goto loop_exit;
-                        
+
                 case 1:
                         printf("\nEnter an integer to insert at the front: ");
                         scanf("%d",&ele);
                         root = insert_front(root, ele);
                         display(root);
+                        break;
 
                 case 2:
                         printf("\nReversing list... ");
-                        scanf("%d",&ele);
-                        root = insert_end(root, ele);
+                        root = reverse_list(root);
                         display(root);
+                        break;
 
                 case 3:
-                        printf("\nEnter an int to insert at place 0: ");
-                        scanf("%d",&del);
-                        root=DelList(root, del);
+                        printf("\nEnter an index to place the data: ");
+                        scanf("%d",&idx);
+                        printf("\nEnter an int to insert at index %d: ", idx);
+                        scanf("%d",&val);
+                        insertToPlace(root, val, idx);
                         display(root);
+                        break;
 
-              }
+                default:
+                        printf("\n%d? What do you expect me to do with %d!?\n", ch, ch);
+
+                }
         }
-        
-        loop_exit: ;
-        
+
+loop_exit:;
+
         return 0;
 }
