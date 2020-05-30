@@ -170,9 +170,9 @@ else
 	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes -v ${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/tests/test_input.txt
 endif
 else
-	$(info (Grok - Valgrind): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist))
-	$(info (Grok - Valgrind): Use 'make testfile' or 'make etf' to create one.)
-	$(info (Grok - Valgrind): For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
+	$(error (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist) \
+	Use 'make testfile' or 'make etf' to create one. \
+	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
 endif
 	@echo ""
 
