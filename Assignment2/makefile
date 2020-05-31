@@ -62,7 +62,8 @@
 # 	To easily create this file, use 'make testfile'
 
 # Grok script version number
-AB_VERSION=1.1
+AB_VERSION=1.4
+CPYEAR=2020
 # The full path to the current project's main source file
 PROJSRC=$(wildcard ${CURDIR}/src/*_main.c)
 # The "human" name of the current project (e.g. foo_main.c becomes foo)
@@ -85,7 +86,7 @@ $(PROJNAME):build
 build:$(PROJSRC)
 # If the location of the project's source file is valid
 ifneq ("$(PROJSRC)","")
-	$(info Make (Grok - Compile): Building "${PROJNAME}" from $^...)
+	$(info (Grok - Compile): Building "${PROJNAME}" from $^...)
 # Create a directory for our compiled binaries (./bin/)
 # -p tells makedir not to complain if that directory already exists
 	@mkdir -p ${CURDIR}/bin/
@@ -93,15 +94,15 @@ ifneq ("$(PROJSRC)","")
 # This will produce a binary in ./bin/, with the name of your project
 # $@ is the project name foo, $^ is the full path to the source file foo_main.c
 # Note: the flag -std=c99 tells GCC to compile for C99 syntax (ISO/IEC 9899:1999)
-	gcc -std=c99 -o ${CURDIR}/bin/$(PROJNAME) $^ ${CURDIR}/src/leak_detector_c.c
+	gcc -Wall -g -std=c99 -o ${CURDIR}/bin/$(PROJNAME) $^
 # Set the execuable bit on the binary produced by GCC
 # In some cases, this may not always be necessary. But we'll do it anyways.
 	@chmod +x ${CURDIR}/bin/$(PROJNAME)
 else
 # Otherwise, print an error message
-	$(info Make (Grok - Compile): ERROR: Could not find the main source file!)
-	$(info Make (Grok - Compile): Please ensure that your source code is located inside of ${CURDIR}, and that)
-	$(info Make (Grok - Compile): your source's filename ends with '_main.c'.)
+	$(error (Grok - Compile): ERROR: Could not find the main source file! \
+	Please ensure that your source code is located inside of ${CURDIR}, and that \
+	your source's filename ends with '_main.c'.)
 endif
 # Prints an empty line (newline)
 	@echo ""
@@ -121,9 +122,8 @@ ifeq (run,$(firstword $(MAKECMDGOALS)))
 endif
 
 run:all
-	$(info Make (Grok - Run Project): Running "${PROJNAME}"...)
+	$(info (Grok - Run Project): Running "${PROJNAME}"...)
 	${CURDIR}/bin/$(PROJNAME) $(RUN_ARGS)
-
 
 # Rule for running tests
 # When called with 'make test', your project will be compiled and then tested
@@ -132,38 +132,72 @@ run:all
 # Grok will not attempt to run tests.
 # See the top of this file for documentation regarding the test input file.
 test:$(PROJNAME)
-ifneq ("$(wildcard ${CURDIR}/test_input.txt)","")
-	$(info Make (Grok - Test): Testing "${PROJNAME}" with provided input from ${CURDIR}/test_input.txt...)
+ifneq ("$(wildcard ${CURDIR}/tests/test_input.txt)","")
+	$(info (Grok - Test): Testing "${PROJNAME}" with provided input from ${CURDIR}/tests/test_input.txt...)
 
 # Depending on whether or not arguments are provided for the project in ./test_args.txt, Grok will automatically
 # pass those in when your program is executed
-ifneq ("$(wildcard ${CURDIR}/test_args.txt)","")
-	$(info Make (Grok - Test): Will test "${PROJNAME}" using arguments provided in ${CURDIR}/test_args.txt...)
-	${CURDIR}/bin/$(PROJNAME) `cat ${CURDIR}/test_args.txt` < ${CURDIR}/test_input.txt
+ifneq ("$(wildcard ${CURDIR}/tests/test_args.txt)","")
+	$(info (Grok - Test): Will test "${PROJNAME}" using arguments provided in ${CURDIR}/tests/test_args.txt...)
+	${CURDIR}/bin/$(PROJNAME) `cat ${CURDIR}/tests/test_args.txt` < ${CURDIR}/tests/test_input.txt
 else
-	${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/test_input.txt
+	${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/tests/test_input.txt
 endif
-
-	$(info Make (Grok - Test): Tests for "${PROJNAME}" have finished.)
 else
-	$(info Make (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/test_input.txt doesn't exist))
-	$(info Make (Grok - Test): Use 'make testfile' or 'make etf' to create one.)
-	$(info Make (Grok - Test): For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
+	$(error (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist) \
+	Use 'make testfile' or 'make etf' to create one. \
+	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
 endif
 	@echo ""
 
-# This rule ('make etf') creates an empty test_input.txt for you, and opens it
+# Rule for running Valgrind
+# When called with 'make valgrind', your project will be compiled and then tested
+# in the same manner as 'make test', but it will be tested for memory leaks and other
+# errors using Valgrind as well.
+valgrind:$(PROJNAME)
+ifeq (, $(shell which valgrind))
+	$(error (Grok - Valgrind): Cannot test "${PROJNAME}", as valgrind does not appear to be installed. Please install valgrind, or check your PATH. \
+	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
+endif
+ifneq ("$(wildcard ${CURDIR}/tests/test_input.txt)","")
+	$(info (Grok - Valgrind): Testing "${PROJNAME}" with provided input from ${CURDIR}/tests/test_input.txt...)
+# Depending on whether or not arguments are provided for the project in ./test_args.txt, Grok will automatically
+# pass those in when your program is executed
+ifneq ("$(wildcard ${CURDIR}/tests/test_args.txt)","")
+	$(info (Grok - Valgrind): Will test "${PROJNAME}" using arguments provided in ${CURDIR}/tests/test_args.txt...)
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes -v ${CURDIR}/bin/$(PROJNAME) `cat ${CURDIR}/tests/test_args.txt` < ${CURDIR}/tests/test_input.txt
+else
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes -v ${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/tests/test_input.txt
+endif
+else
+	$(error (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist) \
+	Use 'make testfile' or 'make etf' to create one. \
+	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
+endif
+	@echo ""
+
+# This rule ('make testfile') creates an empty test_input.txt for you, and opens it
 # in your $EDITOR
 testfile:
-	$(info Make (Grok - Create Test File): Creating and opening a test_input file for "${PROJNAME}"...)
-	touch ${CURDIR}/test_input.txt
-	${EDITOR} ${CURDIR}/test_input.txt
+	$(info (Grok - Edit Test Input File): Creating and opening a test_input.txt file for "${PROJNAME}"...)
+	@mkdir -p ${CURDIR}/tests/
+	@touch ${CURDIR}/tests/test_input.txt
+	${EDITOR} ${CURDIR}/tests/test_input.txt
+	
+# This rule ('make testargs') creates an empty test_args.txt for you, and opens it
+# in your $EDITOR
+testargs:
+	$(info (Grok - Edit Test Arguments): Creating and opening a test_args.txt file for "${PROJNAME}"...)
+	@mkdir -p ${CURDIR}/tests/
+	@touch ${CURDIR}/tests/test_args.txt
+	${EDITOR} ${CURDIR}/tests/test_args.txt
 
 # This rule ('make etf') creates an empty test_input.txt for you.
 etf:
-	$(info Make (Grok - Create Test File): Creating empty test_input file for "${PROJNAME}"...)
-	touch ${CURDIR}/test_input.txt
-
+	$(info (Grok - Create Test File): Creating empty test_input.txt and test_args.txt files for "${PROJNAME}"...)
+	mkdir -p ${CURDIR}/tests/
+	touch ${CURDIR}/tests/test_input.txt
+	touch ${CURDIR}/tests/test_args.txt
 
 # Static code analysis
 # This rule will run scan-build against your project's source code, which will alert
@@ -171,30 +205,28 @@ etf:
 # You may invoke scan-build with 'make lint', or alternatively 'scan-build make <any other rule>'
 lint:
 ifneq (, $(shell which scan-build))
-	$(info Make (Grok - Lint): Linting "${PROJNAME}" source file: ${PROJSRC} (using scan-build)...)
+	$(info (Grok - Lint): Linting "${PROJNAME}" source file: ${PROJSRC} (using scan-build)...)
 # Invoke scan-build on your project's source files
-# Note that, as with the build rule, the flag -std=c99 tells GCC to compile for C99 syntax (ISO/IEC 9899:1999)
-	scan-build gcc -std=c99 -c ${PROJSRC}
+	@mkdir -p ${CURDIR}/bin/scan-build/
+	scan-build gcc -Wall -g -std=c99 -c ${PROJSRC} -o ${CURDIR}/bin/scan-build/${PROJNAME}
 else
-	$(info Make (Grok - Lint): Will skip linting "${PROJNAME}", as scan-build does not appear to be available. Please install scan-build, or check your PATH.)
-	$(info Make (Grok - Lint): For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
+	$(error (Grok - Lint): Cannot test "${PROJNAME}", as scan-build does not appear to be installed. Please install scan-build, or check your PATH. \
+	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
 endif
 	@echo ""
-
 
 # Rule for (brief) cleanup
 # When called with 'make clean', Grok will remove the ./bin/ directory
 # This effectively scrubs any files Grok may have generated from the current
 # directory
 clean:
-	$(info Make (Grok - Clean): Removing ${CURDIR}/bin/...)
+	$(info (Grok - Clean): Removing ${CURDIR}/bin/...)
 # Remove ./bin/, without printing errors if the directory doesn't exist
 	rm -rf ${CURDIR}/bin/
 	@echo ""
 
-
 help:
 	$(info Grok Makefile - Version ${AB_VERSION})
-	$(info (c) 2017 Charlton Trezevant - MIT License)
+	$(info (c) ${CPYEAR} Charlton Trezevant - MIT License)
 	$(info For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
 	@echo ""
