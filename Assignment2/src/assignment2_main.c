@@ -224,7 +224,7 @@ void customer_destroy(Customer *c){
         if(c == NULL)
                 return;
 
-        debugf(DEBUG_TRACE_CUSTOMER, "Destroying customer %s\n", cursor->cust->name);
+        debugf(DEBUG_TRACE_CUSTOMER, "Destroying customer %s\n", c->name);
         mmgr_free(g_MEM, c->name);
         mmgr_free(g_MEM, c);
 
