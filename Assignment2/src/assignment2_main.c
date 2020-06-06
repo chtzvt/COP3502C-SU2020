@@ -34,29 +34,8 @@
   #define debugf(lvl, fmt, ...) ((void)0)
 #endif
 
-// MMGR Type definitions/function prototypes
-// (c) Charlton Trezevant 2020
-// Rave reviews:
-// 10/10
-//    - IGN
-// All heap blocks were freed -- no leaks are possible
-//    - Valgrind
-// it's pronounced "mugger"
-typedef struct MMGR_Entry {
-        void* handle;
-        size_t size;
-        // todo: gc via refcounts or mark+sweep
-        // allow entries to be marked/given affinities for batched release
-} MMGR_Entry;
-
-typedef struct MMGR {
-        // todo: benchmark current realloc strat vs lili vs pointer hash table
-        MMGR_Entry **entries;
-        int numEntries;
-        int *free; // available recyclable slots
-        int numFree;
-        volatile int mutex;
-} MMGR;
+typedef struct MMGR_Entry MMGR_Entry;
+typedef struct MMGR MMGR;
 
 MMGR *mmgr_init();
 void *mmgr_malloc(MMGR *tbl, size_t size);
@@ -100,6 +79,22 @@ void panic(const char * fmt, ...){
 // This is the initial version of my C memory manager.
 // At the moment it's very rudimentary.
 
+typedef struct MMGR_Entry {
+        void* handle;
+        size_t size;
+        // todo: gc via refcounts or mark+sweep
+        // allow entries to be marked/given affinities for batched release
+} MMGR_Entry;
+
+typedef struct MMGR {
+        // todo: benchmark current realloc strat vs lili vs pointer hash table
+        MMGR_Entry **entries;
+        int numEntries;
+        int *free; // available recyclable slots
+        int numFree;
+        volatile int mutex;
+} MMGR;
+
 // Initializes the memory manager's global state table. This tracks all allocated
 // memory, reallocates freed entries, and ensures that all allocated memory is
 // completely cleaned up on program termination.
@@ -121,6 +116,17 @@ MMGR *mmgr_init(){
         debugf(DEBUG_LEVEL_MMGR, "mmgr: initialized\n");
 
         return state_table;
+}
+
+// Mutex acquisition/release helpers to atomicize access to the memory manager's
+// state table. Not really necessary atm but eventually I might play with threading
+void mmgr_mutex_acquire(MMGR *tbl){
+        while (tbl->mutex == 1);
+        tbl->mutex = 1;
+}
+
+void mmgr_mutex_release(MMGR *tbl){
+        tbl->mutex = 0;
 }
 
 // Allocate memory and maintain a reference in the memory manager's state table
@@ -146,7 +152,7 @@ void *mmgr_malloc(MMGR *tbl, size_t size){
                 tbl->entries[tgt_idx]->size = size;
                 tbl->entries[tgt_idx]->handle = malloc(size);
                 memset(tbl->entries[tgt_idx]->handle, 0, size);
-                
+
                 // Copy freshly allocated region pointer to handle
                 handle = tbl->entries[tgt_idx]->handle;
 
@@ -212,7 +218,7 @@ void mmgr_free(MMGR *tbl, void* handle){
                         debugf(DEBUG_LEVEL_MMGR, "mmgr: found handle %p at index %d\n", handle, i);
 
                         tbl->numFree++;
-                        
+
                         // Free and nullify table entry
                         free(tbl->entries[i]->handle);
                         tbl->entries[i]->handle = NULL;
@@ -265,15 +271,4 @@ void mmgr_cleanup(MMGR *tbl){
         free(tbl);
 
         tbl = NULL;
-}
-
-// Mutex acquisition/release helpers to atomicize access to the memory manager's
-// state table. Not really necessary atm but eventually I might play with threading
-void mmgr_mutex_acquire(MMGR *tbl){
-        while (tbl->mutex == 1);
-        tbl->mutex = 1;
-}
-
-void mmgr_mutex_release(MMGR *tbl){
-        tbl->mutex = 0;
 }
