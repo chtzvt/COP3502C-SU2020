@@ -323,6 +323,8 @@ void lane_destroy(Lane *l){
 
                 cursor = cursor->next;
         }
+        
+        mmgr_free(g_MEM, l);
 
 }
 
@@ -337,11 +339,20 @@ void lane_enqueue(Lane *l, Customer *c){
                 return;
         }
 
-        Node *node = node_create(c, l->back);
+        Node *node = node_create(c, NULL);
 
         if(l->front == NULL) {
                 debugf(DEBUG_TRACE_LANE, "lane_dequeue queue is empty, front pointer updated\n");
                 l->front = node;
+        }
+
+        if(l->back == NULL) {
+                debugf(DEBUG_TRACE_LANE, "lane_dequeue queue is empty, back pointer updated\n");
+                l->back = node;
+        } else {
+                debugf(DEBUG_TRACE_LANE, "lane_dequeue enqueued node\n");
+                l->back->next = node;
+                l->back = node;
         }
 }
 
