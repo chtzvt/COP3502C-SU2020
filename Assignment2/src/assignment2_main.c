@@ -9,6 +9,8 @@
 #define CONFIG_INFILE_NAME "in.txt"
 #define CONFIG_OUTFILE_NAME "out.txt"
 #define CONFIG_NUM_LANES 12
+
+// Maximum values and limits
 #define CONFIG_MAX_TEST_CASES 25
 #define CONFIG_MAX_CUSTOMERS 500000
 #define CONFIG_MAX_CUST_ITEMS 100
@@ -21,12 +23,12 @@
 #define DEBUG_LEVEL_INFO 2
 #define DEBUG_LEVEL_NONE 1000
 
-// Functionality-specific tracing
+// Functionality-specific debug levels
 #define DEBUG_TRACE_CUSTOMER -1
 #define DEBUG_TRACE_LANE -2
 #define DEBUG_TRACE_MMGR -3
 
-//#define DEBUG DEBUG_LEVEL_ALL
+#define DEBUG DEBUG_LEVEL_ALL
 
 ////////////////////////// Assignment 2 Prototypes //////////////////////////
 
