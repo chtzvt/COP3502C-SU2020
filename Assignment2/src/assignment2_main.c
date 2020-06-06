@@ -15,11 +15,16 @@
 #define CONFIG_MAX_NAME_LEN 10
 #define CONFIG_MAX_TIME 1000000000
 
+// Global debug levels
 #define DEBUG_LEVEL_ALL 0
-#define DEBUG_LEVEL_MMGR 1
-#define DEBUG_LEVEL_TRACE 2
-#define DEBUG_LEVEL_INFO 3
+#define DEBUG_LEVEL_TRACE 1
+#define DEBUG_LEVEL_INFO 2
 #define DEBUG_LEVEL_NONE 1000
+
+// Functionality-specific tracing
+#define DEBUG_TRACE_CUSTOMER -1
+#define DEBUG_TRACE_LANE -2
+#define DEBUG_TRACE_MMGR -3
 
 //#define DEBUG DEBUG_LEVEL_ALL
 
@@ -66,7 +71,7 @@ void global_lanes_destroy();
 #ifdef DEBUG
 #define debugf(lvl, fmt, ...) \
         ({ \
-                if (DEBUG == 0 || (lvl) >= DEBUG) { \
+                if (DEBUG == 0 || (lvl > 0 && lvl >= DEBUG) || (lvl < 0 && lvl == DEBUG)) { \
                         fprintf(stderr, fmt, ## __VA_ARGS__); fflush(stderr); \
                 } \
         })
