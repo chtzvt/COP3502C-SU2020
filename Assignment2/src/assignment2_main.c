@@ -48,7 +48,11 @@ void mmgr_mutex_release(MMGR *tbl);
 MMGR* g_MEM;
 
 // Utility
+int stdout_enabled = 1;
+FILE *g_outfp;
+
 void panic(const char * format, ...);
+void write_out(const char * format, ...);
 
 ////////////////////////// Entry //////////////////////////
 
@@ -57,9 +61,9 @@ int main(void){
   printf("Assignment 2!\n");
 }
 
-////////////////////////// Helpers //////////////////////////
+////////////////////////// Util //////////////////////////
 
-// Panic is called when something goes wrong
+// Panic is called when something goes wrong and we have to die for the greater good
 void panic(const char * fmt, ...){
         // Vargs to behave like printf (but not to make black metal)
         va_list vargs;
@@ -72,6 +76,23 @@ void panic(const char * fmt, ...){
         // Clean up any allocated memory and exit
         mmgr_cleanup(g_MEM);
         exit(1);
+}
+
+// Write_out prints messages to the global output file
+void write_out(const char * fmt, ...){
+        va_list vargs;
+        va_start(vargs, fmt);
+        // Print message to outfile
+        if(g_outfp != NULL) {
+                vfprintf(g_outfp, fmt, vargs);
+                fflush(g_outfp);
+        }
+        // if stdout is enabled (in the case of testing), print msg to stdout as well
+        if(stdout_enabled == 1) {
+                vfprintf(stdout, fmt, vargs);
+                fflush(stdout);
+        }
+        va_end(vargs);
 }
 
 ////////////////////////// Memory manager //////////////////////////
