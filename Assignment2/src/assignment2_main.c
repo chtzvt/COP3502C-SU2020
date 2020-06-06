@@ -181,6 +181,9 @@ int main(int argc, char **argv){
                 panic("invalid input file format: number of test cases unknown\n");
         }
 
+        if(num_cases > CONFIG_MAX_TEST_CASES)
+                panic("%d customers greater than maximum of %d\n", num_cases, CONFIG_MAX_TEST_CASES);
+
         // Run test cases from input file, panic if EOF is encountered
         for(int case_n = 0; case_n < num_cases; case_n++) {
                 store_lanes_create();
@@ -190,6 +193,9 @@ int main(int argc, char **argv){
                 if(!feof(infile)) {
                         // Fetch number of courses in current case
                         fscanf(infile, "%d", &case_num_customers);
+                        if(case_num_customers > CONFIG_MAX_CUSTOMERS)
+                                panic("%d customers greater than maximum of %d\n", case_num_customers, CONFIG_MAX_CUSTOMERS);
+
                         debugf(DEBUG_LEVEL_INFO, "Infile contains %d customers for test case %d\n", case_num_customers, case_n);
 
                         int time_enter_tmp, line_num_tmp, num_items_tmp;
