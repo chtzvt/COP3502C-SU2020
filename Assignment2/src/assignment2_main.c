@@ -84,8 +84,21 @@ void global_lanes_destroy();
 ////////////////////////// Memory Manager Prototypes //////////////////////////
 // (c) Charlton Trezevant - 2020
 
-typedef struct MMGR_Entry MMGR_Entry;
-typedef struct MMGR MMGR;
+typedef struct MMGR_Entry {
+        void* handle;
+        size_t size;
+        // todo: gc via refcounts or mark+sweep
+        // allow entries to be marked/given affinities for batched release
+} MMGR_Entry;
+
+typedef struct MMGR {
+        // todo: benchmark current realloc strat vs lili vs pointer hash table
+        MMGR_Entry **entries;
+        int numEntries;
+        int *free; // available recyclable slots
+        int numFree;
+        volatile int mutex;
+} MMGR;
 
 MMGR *mmgr_init();
 void *mmgr_malloc(MMGR *tbl, size_t size);
@@ -384,22 +397,6 @@ void write_out(const char * fmt, ...){
 
 // This is the initial version of my C memory manager.
 // At the moment it's very rudimentary.
-
-typedef struct MMGR_Entry {
-        void* handle;
-        size_t size;
-        // todo: gc via refcounts or mark+sweep
-        // allow entries to be marked/given affinities for batched release
-} MMGR_Entry;
-
-typedef struct MMGR {
-        // todo: benchmark current realloc strat vs lili vs pointer hash table
-        MMGR_Entry **entries;
-        int numEntries;
-        int *free; // available recyclable slots
-        int numFree;
-        volatile int mutex;
-} MMGR;
 
 // Initializes the memory manager's global state table. This tracks all allocated
 // memory, reallocates freed entries, and ensures that all allocated memory is
