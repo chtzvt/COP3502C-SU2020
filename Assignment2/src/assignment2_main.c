@@ -141,7 +141,7 @@ int main(int argc, char **argv){
                         debugf(DEBUG_LEVEL_INFO, "Output file name: %s\n", argv[2]);
                 }
         } else {
-                infile = fopen(CONFIG_OUTFILE_NAME, "a");
+                g_outfp = fopen(CONFIG_OUTFILE_NAME, "a");
                 debugf(DEBUG_LEVEL_INFO, "Output file name: %s\n", CONFIG_OUTFILE_NAME);
         }
 
