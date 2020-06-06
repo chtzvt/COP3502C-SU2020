@@ -30,7 +30,7 @@
 #define DEBUG_TRACE_CHECKOUT -3
 #define DEBUG_TRACE_MMGR -7
 
-//#define DEBUG DEBUG_LEVEL_ALL
+//#define DEBUG DEBUG_LEVEL_INFO
 
 ////////////////////////// Assignment 2 Prototypes //////////////////////////
 
@@ -122,7 +122,7 @@ void mmgr_mutex_release(MMGR *tbl);
 MMGR* g_MEM;
 
 ////////////////////////// Utility //////////////////////////
-int stdout_enabled = 1;
+int stdout_enabled = 0;
 FILE *g_outfp;
 
 void panic(const char * format, ...);
@@ -164,11 +164,11 @@ int main(int argc, char **argv){
                         debugf(DEBUG_LEVEL_INFO, "Writing output to stdout\n");
                 } else {
                         g_outfp = fopen(argv[2], "a");
-                        debugf(DEBUG_LEVEL_INFO, "Output file name: %s\n", argv[2]);
+                        debugf(DEBUG_LEVEL_INFO, "Output file name1: %s\n", argv[2]);
                 }
         } else {
                 g_outfp = fopen(CONFIG_OUTFILE_NAME, "a");
-                debugf(DEBUG_LEVEL_INFO, "Output file name: %s\n", CONFIG_OUTFILE_NAME);
+                debugf(DEBUG_LEVEL_INFO, "Output file name2: %s\n", CONFIG_OUTFILE_NAME);
         }
 
         // Attempt to read the number of test cases from the input file, panic
@@ -185,7 +185,7 @@ int main(int argc, char **argv){
         for(int case_n = 0; case_n < num_cases; case_n++) {
                 store_lanes_create();
                 int case_num_customers = 0;
-                int case_totoal_time = 0;
+                int first_cust_lane = -1;
 
                 if(!feof(infile)) {
                         // Fetch number of courses in current case
@@ -202,8 +202,11 @@ int main(int argc, char **argv){
 
                                 debugf(DEBUG_LEVEL_INFO, "Scanning customer line\n");
                                 fscanf(infile, "%d %d %s %d", &time_enter_tmp, &line_num_tmp, cust_name_tmp, &num_items_tmp);
-                                debugf(DEBUG_LEVEL_INFO, "Enqueueing customer %s\n", cust_name_tmp);
+                                debugf(DEBUG_LEVEL_INFO, "Enqueueing customer %s in lane %d\n", cust_name_tmp, (line_num_tmp - 1));
 
+                                if(first_cust_lane == -1)
+                                  first_cust_lane = (line_num_tmp - 1);
+                                  
                                 store_lanes_enqueue((line_num_tmp - 1), customer_create(cust_name_tmp, num_items_tmp, line_num_tmp, time_enter_tmp));
                         }
 
@@ -211,15 +214,12 @@ int main(int argc, char **argv){
 
                         debugf(DEBUG_LEVEL_INFO, "Starting checkout\n");
 
-                        Customer *cust = checkout_get_next_cust();
-
-                        while(cust != NULL) {
-                                if(case_totoal_time == 0)
-                                  case_totoal_time += cust->time_enter;
-                                  
-                                case_totoal_time += checkout_time(cust);
-                                
-                                write_out("%s from line %d checks out at time %d. \n", cust->name, cust->line_number, case_totoal_time);
+                        Customer *cust = store_lanes_dequeue(first_cust_lane);
+                        int checkout_wait_time = 0;
+                        
+                        while(cust != NULL){
+                                write_out("%s from line %d checks out at time %d.\n", cust->name, cust->line_number, checkout_time(cust) + cust->time_enter);
+                                checkout_wait_time += checkout_time(cust) + cust->time_enter;
                                 customer_destroy(cust);
                                 cust = checkout_get_next_cust();
                         }
@@ -227,6 +227,8 @@ int main(int argc, char **argv){
                 } else {
                         panic("reached EOF while attempting to run test case %d", case_n);
                 }
+
+                store_lanes_destroy();
         }
 
         debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
@@ -247,7 +249,23 @@ int main(int argc, char **argv){
 ////////////////////////// Customer/Lane methods //////////////////////////
 
 Customer* customer_create(char *name, int num_items, int line_number, int time_enter){
-        if(num_items > CONFIG_MAX_CUST_ITEMS || time_enter > CONFIG_MAX_TIME || line_number > (CONFIG_NUM_LANES - 1)) {
+        int malformed = 0;
+        if(num_items > CONFIG_MAX_CUST_ITEMS) {
+                debugf(DEBUG_TRACE_CUSTOMER, "customer_create line number %d > maximum of %d\n", num_items, CONFIG_MAX_CUST_ITEMS);
+                malformed = 1;
+        }
+
+        if(time_enter > CONFIG_MAX_TIME) {
+                debugf(DEBUG_TRACE_CUSTOMER, "customer_create time enter %d > maximum of %d\n", time_enter, CONFIG_MAX_TIME);
+                malformed = 1;
+        }
+
+        if(line_number > CONFIG_NUM_LANES) {
+                debugf(DEBUG_TRACE_CUSTOMER, "customer_create line number %d > maximum of %d\n", line_number, CONFIG_NUM_LANES);
+                malformed = 1;
+        }
+
+        if(malformed == 1) {
                 debugf(DEBUG_TRACE_CUSTOMER, "customer_create Refusing to instantiate malformed customer.\n");
                 return NULL;
         }
