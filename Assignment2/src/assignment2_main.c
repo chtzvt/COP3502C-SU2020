@@ -92,9 +92,85 @@ void global_lanes_destroy();
 
 ////////////////////////// Entry //////////////////////////
 
-int main(void){
-  atexit(report_mem_leak); //Ahmed's memory leak detection
-  printf("Assignment 2!\n");
+int main(int argc, char **argv){
+        debugf(DEBUG_LEVEL_TRACE, "Ahmed memory leak detector init.\n");
+        atexit(report_mem_leak); //Ahmed's memory leak detection
+
+        // Initialize MMGR
+        debugf(DEBUG_LEVEL_TRACE, "MMGR init.\n");
+        g_MEM = mmgr_init();
+
+        // You can override the default input filename if you'd like by
+        // passing a command line argument
+        FILE *infile;
+        if(argc > 1 && strcmp(argv[1], "use_default") != 0) {
+                infile = fopen(argv[1], "r");
+                debugf(DEBUG_LEVEL_INFO, "Input file name: %s\n", argv[1]);
+        } else {
+                infile = fopen(CONFIG_INFILE_NAME, "r");
+                debugf(DEBUG_LEVEL_INFO, "Input file name: %s\n", CONFIG_INFILE_NAME);
+        }
+
+        // Panic if opening the input file failed
+        if (infile == NULL) {
+                panic("Failed to open input file\n");
+                return 1;
+        }
+
+        // You can override the default output file name if you'd like to send output to either
+        // a different file or to stdout
+        if(argc > 2) {
+                if(strcmp(argv[2], "stdout") == 0) {
+                        g_outfp = NULL;
+                        stdout_enabled = 1;
+                        debugf(DEBUG_LEVEL_INFO, "Writing output to stdout\n");
+                } else {
+                        g_outfp = fopen(argv[2], "a");
+                        debugf(DEBUG_LEVEL_INFO, "Output file name: %s\n", argv[2]);
+                }
+        } else {
+                infile = fopen(CONFIG_OUTFILE_NAME, "a");
+                debugf(DEBUG_LEVEL_INFO, "Output file name: %s\n", CONFIG_OUTFILE_NAME);
+        }
+
+        // Attempt to read the number of test cases from the input file, panic
+        // if EOF is encountered
+        int num_cases = -1;
+        if(!feof(infile)) {
+                fscanf(infile, "%d", &num_cases);
+                debugf(DEBUG_LEVEL_INFO, "Infile contains %d cases\n", num_cases);
+        } else {
+                panic("invalid input file format: number of test cases unknown\n");
+        }
+
+        // Run test cases from input file, panic if EOF is encountered
+        for(int case_n = 0; case_n < num_cases; case_n++) {
+                int case_num_customers = 0;
+
+                if(!feof(infile)) {
+                        // Fetch number of courses in current case
+                        fscanf(infile, "%d", &case_num_customers);
+                        debugf(DEBUG_LEVEL_INFO, "Infile contains %d customers for test case %d\n", case_num_customers, case_n);
+                } else {
+                        panic("reached EOF while attempting to run test case %d", case_n);
+                }
+        }
+
+        debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
+        mmgr_cleanup(g_MEM);
+
+        debugf(DEBUG_LEVEL_TRACE, "Infile close.\n");
+        if(infile != NULL)
+                fclose(infile);
+
+        debugf(DEBUG_LEVEL_TRACE, "Outfile close.\n");
+        if(g_outfp != NULL)
+                fclose(g_outfp);
+
+        debugf(DEBUG_LEVEL_TRACE, "Exiting.\n");
+        return 0;
+}
+
 ////////////////////////// Customer/Lane methods //////////////////////////
 
 Customer* customer_create(char *name, int num_items, int line_number, int time_enter){
