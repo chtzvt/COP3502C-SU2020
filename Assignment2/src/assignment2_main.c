@@ -12,7 +12,7 @@
 #define CONFIG_CHECKOUT_TIME_BASE 30
 #define CONFIG_CHECKOUT_TIME_PER_ITEM 5
 
-// Maximum values and limits
+// Maximum values and limits as specified in the project spec
 #define CONFIG_MAX_TEST_CASES 25
 #define CONFIG_MAX_CUSTOMERS 500000
 #define CONFIG_MAX_CUST_ITEMS 100
@@ -25,11 +25,13 @@
 #define DEBUG_LEVEL_INFO 2
 
 // Functionality-specific debug levels
+// These enable debug output only for specific sections of the program
 #define DEBUG_TRACE_CUSTOMER -1
 #define DEBUG_TRACE_LANE -2
 #define DEBUG_TRACE_CHECKOUT -3
 #define DEBUG_TRACE_MMGR -7
 
+// Current debug level set/disable
 //#define DEBUG DEBUG_LEVEL_INFO
 
 ////////////////////////// Assignment 2 Prototypes //////////////////////////
@@ -123,7 +125,7 @@ MMGR* g_MEM;
 
 ////////////////////////// Utility //////////////////////////
 int stdout_enabled = 0;
-FILE *g_outfp;
+FILE *g_outfp; // output file pointer
 
 void panic(const char * format, ...);
 void write_out(const char * format, ...);
@@ -140,6 +142,8 @@ int main(int argc, char **argv){
 
         // You can override the default input filename if you'd like by
         // passing a command line argument
+        // This is for my own use in an automated testing harness and will not impact any
+        // tests performed by TAs
         FILE *infile;
         if(argc > 1 && strcmp(argv[1], "use_default") != 0) {
                 infile = fopen(argv[1], "r");
@@ -157,6 +161,8 @@ int main(int argc, char **argv){
 
         // You can override the default output file name if you'd like to send output to either
         // a different file or to stdout
+        // This is for my own use in an automated testing harness and will not impact any
+        // tests performed by TAs
         if(argc > 2) {
                 if(strcmp(argv[2], "stdout") == 0) {
                         g_outfp = NULL;
@@ -181,11 +187,13 @@ int main(int argc, char **argv){
                 panic("invalid input file format: number of test cases unknown\n");
         }
 
+        // Sanity check enforcement per project spec
         if(num_cases > CONFIG_MAX_TEST_CASES)
                 panic("%d customers greater than maximum of %d\n", num_cases, CONFIG_MAX_TEST_CASES);
 
         // Run test cases from input file, panic if EOF is encountered
         for(int case_n = 0; case_n < num_cases; case_n++) {
+                // Initialize all store lanes (queues 0 - CONFIG_NUM_LANES)
                 store_lanes_create();
                 int case_num_customers = 0;
                 int first_cust_lane = -1;
@@ -193,11 +201,14 @@ int main(int argc, char **argv){
                 if(!feof(infile)) {
                         // Fetch number of courses in current case
                         fscanf(infile, "%d", &case_num_customers);
+
+                        // Sanity check enforcement per project spec
                         if(case_num_customers > CONFIG_MAX_CUSTOMERS)
                                 panic("%d customers greater than maximum of %d\n", case_num_customers, CONFIG_MAX_CUSTOMERS);
 
                         debugf(DEBUG_LEVEL_INFO, "Infile contains %d customers for test case %d\n", case_num_customers, case_n);
 
+                        // Tmp vars populated for each customer as they're read from the file
                         int time_enter_tmp, line_num_tmp, num_items_tmp;
                         char cust_name_tmp[CONFIG_MAX_NAME_LEN];
 
@@ -210,9 +221,11 @@ int main(int argc, char **argv){
                                 fscanf(infile, "%d %d %s %d", &time_enter_tmp, &line_num_tmp, cust_name_tmp, &num_items_tmp);
                                 debugf(DEBUG_LEVEL_INFO, "Enqueueing customer %s in lane %d\n", cust_name_tmp, (line_num_tmp - 1));
 
+                                // Keeping tabs on which customer was first in line is important once checkout starts
                                 if(first_cust_lane == -1)
                                         first_cust_lane = (line_num_tmp - 1);
 
+                                // Create a new customer instance and enqueue it into the appropriate lane (queue)
                                 store_lanes_enqueue((line_num_tmp - 1), customer_create(cust_name_tmp, num_items_tmp, line_num_tmp, time_enter_tmp));
                         }
 
@@ -220,17 +233,28 @@ int main(int argc, char **argv){
 
                         debugf(DEBUG_LEVEL_INFO, "Starting checkout\n");
 
+                        // Dequeue the first customer
                         Customer *cust = store_lanes_dequeue(first_cust_lane);
                         int checkout_time_total = 0;
 
                         while(cust != NULL) {
+                                // Resets the running total of time spent checking customers out if the most recently dequeued
+                                // customer entered the store after the tally
+                                // This had me scratching my head for a bit, nice one
                                 if(cust->time_enter > checkout_time_total)
                                         checkout_time_total = cust->time_enter + checkout_time(cust);
                                 else
                                         checkout_time_total += checkout_time(cust);
 
+                                // This is a wrapper around fprintf/stdout that allows me to enable or disable stdout for testing
+                                // Come to think of it, I could have just set g_outfp = stdout and that probably would have been better
+                                // Can't win them all
                                 write_out("%s from line %d checks out at time %d.\r\n", cust->name, cust->line_number, checkout_time_total);
+
+                                // Once customers have been checked out we delete the instance and free the memory
                                 customer_destroy(cust);
+
+                                // Then the next customer is dequeued
                                 cust = checkout_get_next_cust();
                         }
 
@@ -238,11 +262,13 @@ int main(int argc, char **argv){
                         panic("reached EOF while attempting to run test case %d", case_n);
                 }
 
+                // Burn the store down, lots of fire
+                // jk we're just deallocating the queues we've made
                 store_lanes_destroy();
         }
 
         debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
-        mmgr_cleanup(g_MEM);
+        mmgr_cleanup(g_MEM); // #noleaks
 
         debugf(DEBUG_LEVEL_TRACE, "Infile close.\n");
         if(infile != NULL)
@@ -256,8 +282,11 @@ int main(int argc, char **argv){
         return 0;
 }
 
-////////////////////////// Customer/Lane methods //////////////////////////
+////////////////////////// Customers, Lanes, and Checkout //////////////////////////
 
+// I hope you like helpers as much as I do
+
+// Create a customer, enforcing a number of sanity checks in the process
 Customer* customer_create(char *name, int num_items, int line_number, int time_enter){
         int malformed = 0;
         if(num_items > CONFIG_MAX_CUST_ITEMS) {
@@ -275,6 +304,7 @@ Customer* customer_create(char *name, int num_items, int line_number, int time_e
                 malformed = 1;
         }
 
+        // Don't make any ~illegal~ customer instances!
         if(malformed == 1) {
                 debugf(DEBUG_TRACE_CUSTOMER, "customer_create Refusing to instantiate malformed customer.\n");
                 return NULL;
@@ -294,6 +324,7 @@ Customer* customer_create(char *name, int num_items, int line_number, int time_e
         return cust;
 }
 
+// Destroy/deallocate a customer instance
 void customer_destroy(Customer *c){
         if(c == NULL)
                 return;
@@ -305,6 +336,8 @@ void customer_destroy(Customer *c){
         return;
 }
 
+// Creates an instance of a Node, which represent entries in the linked list stored in
+// each queue
 Node* node_create(Customer *c, Node *next){
         debugf(DEBUG_TRACE_LANE, "node_create creating lane queue node\n");
         Node *node = mmgr_malloc(g_MEM, sizeof(Node));
@@ -314,6 +347,7 @@ Node* node_create(Customer *c, Node *next){
         return node;
 }
 
+// Destroy/deallocate a node instance
 void node_destroy(Node *n){
         if(n == NULL) {
                 debugf(DEBUG_TRACE_LANE, "node_destroy called to destroy NULL node! Returning\n");
@@ -323,6 +357,7 @@ void node_destroy(Node *n){
         debugf(DEBUG_TRACE_LANE, "node_destroy destroyed a node\n");
 }
 
+// Create an instance of an empty queue
 Lane* lane_create(){
         debugf(DEBUG_TRACE_LANE, "lane_create initializing new lane\n");
         Lane *lane = mmgr_malloc(g_MEM, sizeof(Lane));
@@ -332,6 +367,7 @@ Lane* lane_create(){
         return lane;
 }
 
+// Destroy an instance of a queue, along with any Nodes/Customers contained within it (if not empty)
 void lane_destroy(Lane *l){
         if(l == NULL) {
                 debugf(DEBUG_TRACE_LANE, "lane_destroy called to destroy NULL lane! Returning\n");
@@ -356,6 +392,9 @@ void lane_destroy(Lane *l){
 
 }
 
+// Enqueue a Customer into a Lane
+// This creates a Node with the appropriate pointers and updates the front/back of the queue
+// as appropriate
 void lane_enqueue(Lane *l, Customer *c){
         if(l == NULL) {
                 debugf(DEBUG_TRACE_LANE, "lane_enqueue NULL lane provided! returning...\n");
@@ -370,20 +409,25 @@ void lane_enqueue(Lane *l, Customer *c){
         Node *node = node_create(c, NULL);
 
         if(l->front == NULL) {
+                // If initially empty, the front pointer should point to the first node in the queue
                 debugf(DEBUG_TRACE_LANE, "lane_dequeue queue is empty, front pointer updated\n");
                 l->front = node;
         }
 
         if(l->back == NULL) {
+                // If the queue is empty, the back pointer should point to the first node
                 debugf(DEBUG_TRACE_LANE, "lane_dequeue queue is empty, back pointer updated\n");
                 l->back = node;
         } else {
+                // If the queue isn't empty
                 debugf(DEBUG_TRACE_LANE, "lane_dequeue enqueued node\n");
                 l->back->next = node;
                 l->back = node;
         }
 }
 
+// Dequeue a Customer from a Lane
+// This removes a Node and performs the appropriate operations to manage pointers the front/back of the queue
 Customer* lane_dequeue(Lane *l){
         debugf(DEBUG_TRACE_LANE, "lane_dequeue called\n");
         if(l == NULL) {
@@ -402,6 +446,7 @@ Customer* lane_dequeue(Lane *l){
                 l->back = NULL;
         }
 
+        // Deallocate the node containg the queue entry
         cust = n->cust;
         node_destroy(n);
         debugf(DEBUG_TRACE_LANE, "lane_dequeue destroyed node containing dequeued customer\n");
@@ -409,6 +454,7 @@ Customer* lane_dequeue(Lane *l){
         return cust;
 }
 
+// Returns the Customer at the front of a queue without dequeueing it
 Customer* lane_peek(Lane *l){
         if(l == NULL) {
                 debugf(DEBUG_TRACE_LANE, "lane_peek called on NULL lane! returning...\n");
@@ -423,6 +469,8 @@ Customer* lane_peek(Lane *l){
         return l->front->cust;
 }
 
+// Returns 1 or 0 if a queue contains elements or is empty (respectively), -1 if
+// the queue is NULL
 int lane_empty(Lane *l){
         if(l == NULL) {
                 debugf(DEBUG_TRACE_LANE, "lane_empty called on NULL lane!\n");
@@ -438,6 +486,7 @@ int lane_empty(Lane *l){
         return 0;
 }
 
+// Initializes the array of lanes (queues) used in the entire store
 void store_lanes_create(){
         for(int i = 0; i < CONFIG_NUM_LANES; i++) {
                 debugf(DEBUG_TRACE_LANE, "Creating lane %d\n", i);
@@ -445,6 +494,7 @@ void store_lanes_create(){
         }
 }
 
+// Deallocates the array of lanes (queues) used in the entire store
 void store_lanes_destroy(){
         for(int i = 0; i < CONFIG_NUM_LANES; i++) {
                 debugf(DEBUG_TRACE_LANE, "Destroying lane %d\n", i);
@@ -452,6 +502,7 @@ void store_lanes_destroy(){
         }
 }
 
+// Enqueues a Customer into the queue at index laneIdx in the store
 void store_lanes_enqueue(int laneIdx, Customer* c){
         if(store_lanes[laneIdx] == NULL) {
                 debugf(DEBUG_TRACE_LANE, "store_lanes_enqueue warning: lane ID %d is NULL\n", laneIdx);
@@ -460,7 +511,7 @@ void store_lanes_enqueue(int laneIdx, Customer* c){
         lane_enqueue(store_lanes[laneIdx], c);
 }
 
-
+// Dequeues a Customer from the queue at index laneIdx in the store
 Customer* store_lanes_dequeue(int laneIdx){
         if(store_lanes[laneIdx] == NULL) {
                 debugf(DEBUG_TRACE_LANE, "store_lanes_dequeue warning: lane ID %d is NULL\n", laneIdx);
@@ -469,6 +520,8 @@ Customer* store_lanes_dequeue(int laneIdx){
         return lane_dequeue(store_lanes[laneIdx]);
 }
 
+// Returns the Customer located in the queue at index laneIdx in the store without
+// dequeueing it
 Customer* store_lanes_peek(int laneIdx){
         if(store_lanes[laneIdx] == NULL) {
                 debugf(DEBUG_TRACE_LANE, "store_lanes_peek warning: lane ID %d is NULL\n", laneIdx);
@@ -477,6 +530,8 @@ Customer* store_lanes_peek(int laneIdx){
         return lane_peek(store_lanes[laneIdx]);
 }
 
+// Returns 1 or 0 if a queue at index laneIdx contains elements or is empty (respectively), -1 if
+// the queue is NULL
 int store_lanes_empty(int laneIdx){
         if(store_lanes[laneIdx] == NULL) {
                 debugf(DEBUG_TRACE_LANE, "store_lanes_empty warning: lane ID %d is NULL\n", laneIdx);
@@ -485,6 +540,7 @@ int store_lanes_empty(int laneIdx){
         return lane_empty(store_lanes[laneIdx]);
 }
 
+// Returns 0 if all lanes in the store are currently empty
 int store_lanes_all_empty(){
         for(int i = 0; i < CONFIG_NUM_LANES; i++) {
                 if(store_lanes_empty(i) == 1) {
@@ -497,10 +553,13 @@ int store_lanes_all_empty(){
         return 0;
 }
 
+// Iterates over each queue in the store to determine which customer should be checked out next
 int checkout_get_next_lane(){
         int nextcust_items = CONFIG_MAX_CUST_ITEMS + 1, nextcust_lane = -1;
         Customer *tmp;
 
+        // Lookping backwards guarantees that the customer from the smaller line number
+        // will be selected if two customers have the same number of items
         for(int i = CONFIG_NUM_LANES; i--> 0; ) {
                 tmp = store_lanes_peek(i);
                 if(tmp == NULL)
@@ -521,10 +580,13 @@ int checkout_get_next_lane(){
         return nextcust_lane;
 }
 
+// Determines the next customer to dequeue based on criteria in the specification and dequeues it
+// This is just sugar
 Customer* checkout_get_next_cust(){
         return store_lanes_dequeue(checkout_get_next_lane());
 }
 
+// Calculates the time required to check out a customer
 int checkout_time(Customer *c){
         if(c == NULL) {
                 debugf(DEBUG_TRACE_CHECKOUT, "checkout_time called with NULL customer! returning...\n");
