@@ -6,7 +6,7 @@
 
 ////////////////////////// Global Project Configuation //////////////////////////
 
-#define CONFIG_INFILE_NAME "in.txt"
+#define CONFIG_INFILE_NAME "file_in.txt"
 #define CONFIG_OUTFILE_NAME "out.txt"
 #define CONFIG_NUM_LANES 12
 
