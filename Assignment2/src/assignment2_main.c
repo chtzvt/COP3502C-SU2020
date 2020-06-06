@@ -9,6 +9,8 @@
 #define CONFIG_INFILE_NAME "file_in.txt"
 #define CONFIG_OUTFILE_NAME "out.txt"
 #define CONFIG_NUM_LANES 12
+#define CONFIG_CHECKOUT_TIME_BASE 30
+#define CONFIG_CHECKOUT_TIME_PER_ITEM 5
 
 // Maximum values and limits
 #define CONFIG_MAX_TEST_CASES 25
@@ -21,14 +23,14 @@
 #define DEBUG_LEVEL_ALL 0
 #define DEBUG_LEVEL_TRACE 1
 #define DEBUG_LEVEL_INFO 2
-#define DEBUG_LEVEL_NONE 1000
 
 // Functionality-specific debug levels
 #define DEBUG_TRACE_CUSTOMER -1
 #define DEBUG_TRACE_LANE -2
-#define DEBUG_TRACE_MMGR -3
+#define DEBUG_TRACE_CHECKOUT -3
+#define DEBUG_TRACE_MMGR -7
 
-#define DEBUG DEBUG_LEVEL_ALL
+//#define DEBUG DEBUG_LEVEL_ALL
 
 ////////////////////////// Assignment 2 Prototypes //////////////////////////
 
@@ -63,9 +65,18 @@ Customer* lane_dequeue(Lane *l);
 Customer* lane_peek(Lane *l);
 int lane_empty(Lane *l);
 
-Lane* global_lanes[CONFIG_NUM_LANES];
-void global_lanes_create();
-void global_lanes_destroy();
+Lane* store_lanes[CONFIG_NUM_LANES];
+void store_lanes_create();
+void store_lanes_destroy();
+void store_lanes_enqueue(int laneIdx, Customer* c);
+Customer* store_lanes_dequeue(int laneIdx);
+Customer* store_lanes_peek(int laneIdx);
+int store_lanes_empty(int laneIdx);
+int store_lanes_all_empty();
+
+int checkout_get_next_lane();
+Customer* checkout_get_next_cust();
+int checkout_time(Customer *c);
 
 ////////////////////////// Debug Output //////////////////////////
 // (c) Charlton Trezevant - 2018
@@ -172,12 +183,47 @@ int main(int argc, char **argv){
 
         // Run test cases from input file, panic if EOF is encountered
         for(int case_n = 0; case_n < num_cases; case_n++) {
+                store_lanes_create();
                 int case_num_customers = 0;
+                int case_totoal_time = 0;
 
                 if(!feof(infile)) {
                         // Fetch number of courses in current case
                         fscanf(infile, "%d", &case_num_customers);
                         debugf(DEBUG_LEVEL_INFO, "Infile contains %d customers for test case %d\n", case_num_customers, case_n);
+
+                        int time_enter_tmp, line_num_tmp, num_items_tmp;
+                        char cust_name_tmp[CONFIG_MAX_NAME_LEN];
+
+                        for(int cust_n = 0; cust_n < case_num_customers; cust_n++) {
+                                time_enter_tmp = 0;
+                                line_num_tmp = 0;
+                                num_items_tmp = 0;
+
+                                debugf(DEBUG_LEVEL_INFO, "Scanning customer line\n");
+                                fscanf(infile, "%d %d %s %d", &time_enter_tmp, &line_num_tmp, cust_name_tmp, &num_items_tmp);
+                                debugf(DEBUG_LEVEL_INFO, "Enqueueing customer %s\n", cust_name_tmp);
+
+                                store_lanes_enqueue((line_num_tmp - 1), customer_create(cust_name_tmp, num_items_tmp, line_num_tmp, time_enter_tmp));
+                        }
+
+                        debugf(DEBUG_LEVEL_INFO, "Finished populating customer queues\n");
+
+                        debugf(DEBUG_LEVEL_INFO, "Starting checkout\n");
+
+                        Customer *cust = checkout_get_next_cust();
+
+                        while(cust != NULL) {
+                                if(case_totoal_time == 0)
+                                  case_totoal_time += cust->time_enter;
+                                  
+                                case_totoal_time += checkout_time(cust);
+                                
+                                write_out("%s from line %d checks out at time %d. \n", cust->name, cust->line_number, case_totoal_time);
+                                customer_destroy(cust);
+                                cust = checkout_get_next_cust();
+                        }
+
                 } else {
                         panic("reached EOF while attempting to run test case %d", case_n);
                 }
@@ -286,6 +332,11 @@ void lane_enqueue(Lane *l, Customer *c){
                 return;
         }
 
+        if(c == NULL) {
+                debugf(DEBUG_TRACE_LANE, "lane_enqueue NULL customer provided! returning...\n");
+                return;
+        }
+
         Node *node = node_create(c, l->back);
 
         if(l->front == NULL) {
@@ -325,6 +376,11 @@ Customer* lane_peek(Lane *l){
                 return NULL;
         }
 
+        if(l->front == NULL) {
+                debugf(DEBUG_TRACE_LANE, "lane_peek called on empty lane\n");
+                return NULL;
+        }
+
         return l->front->cust;
 }
 
@@ -343,18 +399,100 @@ int lane_empty(Lane *l){
         return 0;
 }
 
-void global_lanes_create(){
+void store_lanes_create(){
         for(int i = 0; i < CONFIG_NUM_LANES; i++) {
                 debugf(DEBUG_TRACE_LANE, "Creating lane %d\n", i);
-                global_lanes[i] = lane_create();
+                store_lanes[i] = lane_create();
         }
 }
 
-void global_lanes_destroy(){
+void store_lanes_destroy(){
         for(int i = 0; i < CONFIG_NUM_LANES; i++) {
                 debugf(DEBUG_TRACE_LANE, "Destroying lane %d\n", i);
-                lane_destroy(global_lanes[i]);
+                lane_destroy(store_lanes[i]);
         }
+}
+
+void store_lanes_enqueue(int laneIdx, Customer* c){
+        if(store_lanes[laneIdx] == NULL) {
+                debugf(DEBUG_TRACE_LANE, "store_lanes_enqueue warning: lane ID %d is NULL\n", laneIdx);
+        }
+
+        lane_enqueue(store_lanes[laneIdx], c);
+}
+
+
+Customer* store_lanes_dequeue(int laneIdx){
+        if(store_lanes[laneIdx] == NULL) {
+                debugf(DEBUG_TRACE_LANE, "store_lanes_dequeue warning: lane ID %d is NULL\n", laneIdx);
+        }
+
+        return lane_dequeue(store_lanes[laneIdx]);
+}
+
+Customer* store_lanes_peek(int laneIdx){
+        if(store_lanes[laneIdx] == NULL) {
+                debugf(DEBUG_TRACE_LANE, "store_lanes_peek warning: lane ID %d is NULL\n", laneIdx);
+        }
+
+        return lane_peek(store_lanes[laneIdx]);
+}
+
+int store_lanes_empty(int laneIdx){
+        if(store_lanes[laneIdx] == NULL) {
+                debugf(DEBUG_TRACE_LANE, "store_lanes_empty warning: lane ID %d is NULL\n", laneIdx);
+        }
+
+        return lane_empty(store_lanes[laneIdx]);
+}
+
+int store_lanes_all_empty(){
+        for(int i = 0; i < CONFIG_NUM_LANES; i++) {
+                if(store_lanes_empty(i) == 1) {
+                        debugf(DEBUG_TRACE_LANE, "store_lanes_empty Lane %d still has customers in it, returning...\n", i);
+                        return 1;
+                }
+        }
+
+        debugf(DEBUG_TRACE_LANE, "store_lanes_all_empty all lanes are empty\n");
+        return 0;
+}
+
+int checkout_get_next_lane(){
+        int nextcust_items = CONFIG_MAX_CUST_ITEMS + 1, nextcust_lane = -1;
+        Customer *tmp;
+
+        for(int i = CONFIG_NUM_LANES; i--> 0; ) {
+                tmp = store_lanes_peek(i);
+                if(tmp == NULL)
+                        continue;
+
+                if(tmp->num_items <= nextcust_items) {
+                        debugf(DEBUG_TRACE_CHECKOUT, "checkout_get_next_lane found candidate in lane %d with %d items\n", i, tmp->num_items);
+                        nextcust_items = tmp->num_items;
+                        nextcust_lane = i;
+                }
+        }
+
+        if(nextcust_lane == -1)
+                debugf(DEBUG_TRACE_CHECKOUT, "checkout_get_next_lane all lanes appear to be empty\n");
+        else
+                debugf(DEBUG_TRACE_CHECKOUT, "checkout_get_next_lane selecting customer from lane %d\n", nextcust_lane);
+
+        return nextcust_lane;
+}
+
+Customer* checkout_get_next_cust(){
+        return store_lanes_dequeue(checkout_get_next_lane());
+}
+
+int checkout_time(Customer *c){
+        if(c == NULL) {
+                debugf(DEBUG_TRACE_CHECKOUT, "checkout_time called with NULL customer! returning...\n");
+                return 0;
+        }
+
+        return CONFIG_CHECKOUT_TIME_BASE + (c->num_items * CONFIG_CHECKOUT_TIME_PER_ITEM);
 }
 
 ////////////////////////// Util //////////////////////////
