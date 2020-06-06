@@ -54,11 +54,177 @@ FILE *g_outfp;
 void panic(const char * format, ...);
 void write_out(const char * format, ...);
 
+////////////////////////// Assignment 2 Prototypes //////////////////////////
+typedef struct Customer {
+        char *name;
+        int num_items;
+        int line_number;
+        int time_enter;
+} Customer;
+
+Customer* customer_create(char *name, int num_items, int line_number, int time_enter);
+void customer_destroy(Customer *c);
+
+typedef struct Node {
+        Customer *cust;
+        struct Node *next;
+} Node;
+
+Node* node_create(Customer *c, Node *next);
+void node_destroy(Node *n);
+
+// Stores our queue.
+typedef struct Lane {
+        Node *front;
+        Node *back;
+} Lane;
+
+Lane* lane_create();
+void lane_destroy(Lane *l);
+void lane_enqueue(Lane *l, Customer *c);
+Customer* lane_dequeue(Lane *l);
+Customer* lane_peek(Lane *l);
+int lane_empty(Lane *l);
+
+Lane* global_lanes[CONFIG_NUM_LANES];
+void global_lanes_create();
+void global_lanes_destroy();
+
 ////////////////////////// Entry //////////////////////////
 
 int main(void){
   atexit(report_mem_leak); //Ahmed's memory leak detection
   printf("Assignment 2!\n");
+////////////////////////// Customer/Lane methods //////////////////////////
+
+Customer* customer_create(char *name, int num_items, int line_number, int time_enter){
+        if(num_items > CONFIG_MAX_CUST_ITEMS || time_enter > CONFIG_MAX_TIME || line_number > (CONFIG_NUM_LANES - 1)) {
+                debugf(DEBUG_LEVEL_TRACE, "Refusing to instantiate malformed customer.\n");
+                return NULL;
+        }
+
+        Customer *cust = mmgr_malloc(g_MEM, sizeof(Customer));
+
+        cust->name = mmgr_malloc(g_MEM, sizeof(char*) * CONFIG_MAX_NAME_LEN);
+        strcpy(cust->name, name);
+
+        cust->num_items = num_items;
+        cust->line_number = line_number;
+        cust->time_enter = time_enter;
+
+        return cust;
+}
+
+void customer_destroy(Customer *c){
+        if(c == NULL)
+                return;
+
+        debugf(DEBUG_LEVEL_TRACE, "Destroying customer %s\n", cursor->cust->name);
+        mmgr_free(g_MEM, c->name);
+        mmgr_free(g_MEM, c);
+
+        return;
+}
+
+Node* node_create(Customer *c, Node *next){
+        Node *node = mmgr_malloc(g_MEM, sizeof(Node));
+        node->cust = c;
+        node->next = next;
+
+        return node;
+}
+
+void node_destroy(Node *n){
+        if(n == NULL)
+                return;
+
+        mmgr_free(g_MEM, n);
+}
+
+Lane* lane_create(){
+        Lane *lane = mmgr_malloc(g_MEM, sizeof(Lane));
+        lane->front = NULL;
+        lane->back = NULL;
+
+        return lane;
+}
+
+void lane_destroy(Lane *l){
+        if(l == NULL)
+                return;
+
+        Node *cursor, *tmp;
+        cursor = l->front;
+
+        while(cursor != NULL) {
+                customer_destroy(cursor->cust);
+
+                tmp = cursor;
+                node_destroy(cursor);
+
+                cursor = cursor->next;
+        }
+
+}
+
+void lane_enqueue(Lane *l, Customer *c){
+        if(l == NULL)
+                return;
+
+        Node *node = node_create(c, l->back);
+
+        if(l->front == NULL)
+                l->front = node;
+}
+
+Customer* lane_dequeue(Lane *l){
+        if(l == NULL)
+                return NULL;
+
+        Node *n;
+        Customer *cust;
+
+        n = l->front;
+        l->front = n->next;
+
+        if(l->front == l->back)
+                l->back = NULL;
+
+        cust = n->cust;
+        node_destroy(n);
+
+        return cust;
+}
+
+Customer* lane_peek(Lane *l){
+        if(l == NULL)
+                return NULL;
+
+        return l->front->cust;
+}
+
+int lane_empty(Lane *l){
+        if(l == NULL)
+                return -1;
+
+        if(l->front == NULL && l->back == NULL)
+                return 1;
+
+        return 0;
+}
+
+void global_lanes_create(){
+        for(int i = 0; i < CONFIG_NUM_LANES; i++) {
+                debugf(DEBUG_LEVEL_TRACE, "Creating lane %d\n", i);
+                global_lanes[i] = lane_create();
+        }
+}
+
+void global_lanes_destroy(){
+        for(int i = 0; i < CONFIG_NUM_LANES; i++) {
+                debugf(DEBUG_LEVEL_TRACE, "Destroying lane %d\n", i);
+                lane_destroy(global_lanes[i]);
+        }
 }
 
 ////////////////////////// Util //////////////////////////
