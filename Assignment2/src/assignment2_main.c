@@ -205,8 +205,8 @@ int main(int argc, char **argv){
                                 debugf(DEBUG_LEVEL_INFO, "Enqueueing customer %s in lane %d\n", cust_name_tmp, (line_num_tmp - 1));
 
                                 if(first_cust_lane == -1)
-                                  first_cust_lane = (line_num_tmp - 1);
-                                  
+                                        first_cust_lane = (line_num_tmp - 1);
+
                                 store_lanes_enqueue((line_num_tmp - 1), customer_create(cust_name_tmp, num_items_tmp, line_num_tmp, time_enter_tmp));
                         }
 
@@ -215,11 +215,15 @@ int main(int argc, char **argv){
                         debugf(DEBUG_LEVEL_INFO, "Starting checkout\n");
 
                         Customer *cust = store_lanes_dequeue(first_cust_lane);
-                        int checkout_wait_time = 0;
-                        
-                        while(cust != NULL){
-                                write_out("%s from line %d checks out at time %d.\n", cust->name, cust->line_number, checkout_time(cust) + cust->time_enter);
-                                checkout_wait_time += checkout_time(cust) + cust->time_enter;
+                        int checkout_time_total = 0;
+
+                        while(cust != NULL) {
+                                if(cust->time_enter > checkout_time_total)
+                                        checkout_time_total = cust->time_enter + checkout_time(cust);
+                                else
+                                        checkout_time_total += checkout_time(cust);
+
+                                write_out("%s from line %d checks out at time %d.\r\n", cust->name, cust->line_number, checkout_time_total);
                                 customer_destroy(cust);
                                 cust = checkout_get_next_cust();
                         }
@@ -341,7 +345,7 @@ void lane_destroy(Lane *l){
 
                 cursor = cursor->next;
         }
-        
+
         mmgr_free(g_MEM, l);
 
 }
