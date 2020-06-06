@@ -163,11 +163,11 @@ int main(int argc, char **argv){
                         stdout_enabled = 1;
                         debugf(DEBUG_LEVEL_INFO, "Writing output to stdout\n");
                 } else {
-                        g_outfp = fopen(argv[2], "a");
+                        g_outfp = fopen(argv[2], "w+");
                         debugf(DEBUG_LEVEL_INFO, "Output file name1: %s\n", argv[2]);
                 }
         } else {
-                g_outfp = fopen(CONFIG_OUTFILE_NAME, "a");
+                g_outfp = fopen(CONFIG_OUTFILE_NAME, "w+");
                 debugf(DEBUG_LEVEL_INFO, "Output file name2: %s\n", CONFIG_OUTFILE_NAME);
         }
 
