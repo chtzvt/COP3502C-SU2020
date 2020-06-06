@@ -236,7 +236,8 @@ void lane_destroy(Lane *l){
                 customer_destroy(cursor->cust);
 
                 tmp = cursor;
-                node_destroy(cursor);
+                customer_destroy(tmp->cust);
+                node_destroy(tmp);
 
                 cursor = cursor->next;
         }
