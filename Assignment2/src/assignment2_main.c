@@ -245,7 +245,7 @@ int main(int argc, char **argv){
                         Customer *cust = store_lanes_dequeue(first_cust_lane);
                         int checkout_time_total = 0;
 
-                        for(int cust_n = 0; cust_n < case_num_customers - 1; cust_n++) {
+                        for(int cust_n = 0; cust_n < case_num_customers; cust_n++) {
                                 // Resets the running total of time spent checking customers out if the most recently dequeued
                                 // customer entered the store after the tally
                                 // This had me scratching my head for a bit, nice one
