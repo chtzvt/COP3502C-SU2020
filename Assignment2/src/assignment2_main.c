@@ -1,3 +1,8 @@
+/*
+   COP 3502C Assignment 2
+   This program is written by: Charlton Trezevant
+ */
+
 #include <stdio.h>
 #include  <stdlib.h>
 #include <string.h>
