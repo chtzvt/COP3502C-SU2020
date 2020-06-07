@@ -4,6 +4,14 @@
 #include <stdarg.h>
 #include "leak_detector_c.h"
 
+/*
+   ~ ~ FYI ~ ~
+
+   The leak detector continues to cause errors and leak memory. Please refer to
+   my WebCourses submission for documentation of this problem, as well as
+   recommended remediary steps.
+ */
+
 ////////////////////////// Global Project Configuation //////////////////////////
 
 #define CONFIG_INFILE_NAME "file_in.txt"
