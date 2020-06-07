@@ -1,0 +1,607 @@
+Leak Detector Considered Harmful
+
+Just so you're aware, the leak detector continues to cause errors and leak memory.
+
+Here's an excerpt from Valgrind with the leak detector enabled:
+
+AMALIA from line 12 checks out at time 100295.
+==6693== Invalid read of size 8
+==6693==    at 0x109322: lane_dequeue (assignment2_main.c:449)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b0 is 0 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== Invalid read of size 8
+==6693==    at 0x10932D: lane_dequeue (assignment2_main.c:450)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x5235468 is 8 bytes inside a block of size 16 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x10A000: xfree (leak_detector_c.c:128)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109F5E: xmalloc (leak_detector_c.c:98)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== Invalid write of size 8
+==6693==    at 0x109335: lane_dequeue (assignment2_main.c:450)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b0 is 0 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== Invalid read of size 8
+==6693==    at 0x10933C: lane_dequeue (assignment2_main.c:452)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b0 is 0 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== Invalid read of size 8
+==6693==    at 0x109343: lane_dequeue (assignment2_main.c:452)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b8 is 8 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== Invalid read of size 8
+==6693==    at 0x10935C: lane_dequeue (assignment2_main.c:458)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x5235460 is 0 bytes inside a block of size 16 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x10A000: xfree (leak_detector_c.c:128)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109F5E: xmalloc (leak_detector_c.c:98)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== Invalid write of size 8
+==6693==    at 0x109E1F: add (leak_detector_c.c:39)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1091D9: lane_create (assignment2_main.c:371)
+==6693==    by 0x109401: store_lanes_create (assignment2_main.c:501)
+==6693==    by 0x108E1C: main (assignment2_main.c:205)
+==6693==  Address 0x52355c0 is 272 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== Invalid read of size 8
+==6693==    at 0x109E2D: add (leak_detector_c.c:40)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1091D9: lane_create (assignment2_main.c:371)
+==6693==    by 0x109401: store_lanes_create (assignment2_main.c:501)
+==6693==    by 0x108E1C: main (assignment2_main.c:205)
+==6693==  Address 0x52355c0 is 272 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+A from line 1 checks out at time 630.
+F from line 6 checks out at time 1135.
+E from line 5 checks out at time 1645.
+D from line 4 checks out at time 2160.
+C from line 3 checks out at time 2680.
+B from line 2 checks out at time 3205.
+==6693==
+==6693== HEAP SUMMARY:
+==6693==     in use at exit: 9,240 bytes in 33 blocks
+==6693==   total heap usage: 294 allocs, 261 frees, 46,140 bytes allocated
+==6693==
+==6693== Searching for pointers to 33 not-freed blocks
+==6693== Checked 69,592 bytes
+==6693==
+==6693== 280 bytes in 1 blocks are still reachable in loss record 1 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== 280 bytes in 1 blocks are indirectly lost in loss record 2 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109FD6: xcalloc (leak_detector_c.c:116)
+==6693==    by 0x109A54: mmgr_malloc (assignment2_main.c:724)
+==6693==    by 0x1090A6: customer_create (assignment2_main.c:321)
+==6693==    by 0x108EEF: main (assignment2_main.c:237)
+==6693==
+==6693== 280 bytes in 1 blocks are indirectly lost in loss record 3 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x1090A6: customer_create (assignment2_main.c:321)
+==6693==    by 0x108EEF: main (assignment2_main.c:237)
+==6693==
+==6693== 280 bytes in 1 blocks are indirectly lost in loss record 4 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109FD6: xcalloc (leak_detector_c.c:116)
+==6693==    by 0x109A54: mmgr_malloc (assignment2_main.c:724)
+==6693==    by 0x1090BE: customer_create (assignment2_main.c:324)
+==6693==    by 0x108EEF: main (assignment2_main.c:237)
+==6693==
+==6693== 280 bytes in 1 blocks are indirectly lost in loss record 5 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x1090BE: customer_create (assignment2_main.c:324)
+==6693==    by 0x108EEF: main (assignment2_main.c:237)
+==6693==
+==6693== 280 bytes in 1 blocks are indirectly lost in loss record 6 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109FD6: xcalloc (leak_detector_c.c:116)
+==6693==    by 0x109A54: mmgr_malloc (assignment2_main.c:724)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== 1,400 bytes in 5 blocks are indirectly lost in loss record 7 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1090A6: customer_create (assignment2_main.c:321)
+==6693==    by 0x108EEF: main (assignment2_main.c:237)
+==6693==
+==6693== 1,400 bytes in 5 blocks are indirectly lost in loss record 8 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1090BE: customer_create (assignment2_main.c:324)
+==6693==    by 0x108EEF: main (assignment2_main.c:237)
+==6693==
+==6693== 1,400 bytes in 5 blocks are indirectly lost in loss record 9 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== 3,080 bytes in 11 blocks are indirectly lost in loss record 10 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1091D9: lane_create (assignment2_main.c:371)
+==6693==    by 0x109401: store_lanes_create (assignment2_main.c:501)
+==6693==    by 0x108E1C: main (assignment2_main.c:205)
+==6693==
+==6693== 8,960 (280 direct, 8,680 indirect) bytes in 1 blocks are definitely lost in loss record 11 of 11
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1091D9: lane_create (assignment2_main.c:371)
+==6693==    by 0x109401: store_lanes_create (assignment2_main.c:501)
+==6693==    by 0x108E1C: main (assignment2_main.c:205)
+==6693==
+==6693== LEAK SUMMARY:
+==6693==    definitely lost: 280 bytes in 1 blocks
+==6693==    indirectly lost: 8,680 bytes in 31 blocks
+==6693==      possibly lost: 0 bytes in 0 blocks
+==6693==    still reachable: 280 bytes in 1 blocks
+==6693==         suppressed: 0 bytes in 0 blocks
+==6693==
+==6693== ERROR SUMMARY: 11 errors from 9 contexts (suppressed: 0 from 0)
+==6693==
+==6693== 1 errors in context 1 of 9:
+==6693== Invalid read of size 8
+==6693==    at 0x109E2D: add (leak_detector_c.c:40)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1091D9: lane_create (assignment2_main.c:371)
+==6693==    by 0x109401: store_lanes_create (assignment2_main.c:501)
+==6693==    by 0x108E1C: main (assignment2_main.c:205)
+==6693==  Address 0x52355c0 is 272 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693==
+==6693== 1 errors in context 2 of 9:
+==6693== Invalid write of size 8
+==6693==    at 0x109E1F: add (leak_detector_c.c:39)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x10995D: mmgr_malloc (assignment2_main.c:703)
+==6693==    by 0x1091D9: lane_create (assignment2_main.c:371)
+==6693==    by 0x109401: store_lanes_create (assignment2_main.c:501)
+==6693==    by 0x108E1C: main (assignment2_main.c:205)
+==6693==  Address 0x52355c0 is 272 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693==
+==6693== 1 errors in context 3 of 9:
+==6693== Invalid read of size 8
+==6693==    at 0x109343: lane_dequeue (assignment2_main.c:452)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b8 is 8 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693==
+==6693== 1 errors in context 4 of 9:
+==6693== Invalid read of size 8
+==6693==    at 0x10933C: lane_dequeue (assignment2_main.c:452)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b0 is 0 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693==
+==6693== 1 errors in context 5 of 9:
+==6693== Invalid write of size 8
+==6693==    at 0x109335: lane_dequeue (assignment2_main.c:450)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b0 is 0 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693==
+==6693== 1 errors in context 6 of 9:
+==6693== Invalid read of size 8
+==6693==    at 0x109322: lane_dequeue (assignment2_main.c:449)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x52354b0 is 0 bytes inside a block of size 280 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109ED3: erase (leak_detector_c.c:70)
+==6693==    by 0x10A111: remove_mem_info (leak_detector_c.c:164)
+==6693==    by 0x109FF4: xfree (leak_detector_c.c:127)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109D9D: add (leak_detector_c.c:26)
+==6693==    by 0x10A0BC: add_mem_info (leak_detector_c.c:147)
+==6693==    by 0x109F7F: xmalloc (leak_detector_c.c:101)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693==
+==6693== 2 errors in context 7 of 9:
+==6693== Invalid read of size 8
+==6693==    at 0x10935C: lane_dequeue (assignment2_main.c:458)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x5235460 is 0 bytes inside a block of size 16 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x10A000: xfree (leak_detector_c.c:128)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109F5E: xmalloc (leak_detector_c.c:98)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693==
+==6693== 2 errors in context 8 of 9:
+==6693== Invalid read of size 8
+==6693==    at 0x10932D: lane_dequeue (assignment2_main.c:450)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Address 0x5235468 is 8 bytes inside a block of size 16 free'd
+==6693==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x10A000: xfree (leak_detector_c.c:128)
+==6693==    by 0x109BC5: mmgr_free (assignment2_main.c:773)
+==6693==    by 0x1091B8: node_destroy (assignment2_main.c:364)
+==6693==    by 0x10936E: lane_dequeue (assignment2_main.c:459)
+==6693==    by 0x1094CB: store_lanes_dequeue (assignment2_main.c:528)
+==6693==    by 0x1095D8: checkout_get_next_cust (assignment2_main.c:594)
+==6693==    by 0x108FA0: main (assignment2_main.c:266)
+==6693==  Block was alloc'd at
+==6693==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6693==    by 0x109F5E: xmalloc (leak_detector_c.c:98)
+==6693==    by 0x109A8A: mmgr_malloc (assignment2_main.c:726)
+==6693==    by 0x10916E: node_create (assignment2_main.c:351)
+==6693==    by 0x1092A9: lane_enqueue (assignment2_main.c:417)
+==6693==    by 0x10949D: store_lanes_enqueue (assignment2_main.c:519)
+==6693==    by 0x108F02: main (assignment2_main.c:237)
+==6693==
+==6693== ERROR SUMMARY: 11 errors from 9 contexts (suppressed: 0 from 0)
+
+By contrast, here's what happens when I remove the leak detector and call to report_mem_leak:
+
+==5546==
+==5546== HEAP SUMMARY:
+==5546==     in use at exit: 0 bytes in 0 blocks
+==5546==   total heap usage: 202 allocs, 202 frees, 16,736 bytes allocated
+==5546==
+==5546== All heap blocks were freed -- no leaks are possible
+==5546==
+==5546== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==5546== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+This issue is clearly linked to poor implementation on the part of the memory leak detector, and it is frustrating to me that I must sort through a laundry list of errors originated from bugs in that code in order to debug my own assignment.
+
+I would recommend omitting the requirement to use the detector in future projects, and instead instruct students on how to use more robust industry-standard tooling to perform leak checks and debugging. In my particular case, I simply compile my code with debug symbols (gcc -g) and run the following Valgrind command:
+
+valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes -v /path/to/mybin
+
+If you're seeking to further improve the tooling available to students, you would be welcome to adapt some of my continuous integration & version control curriculum to this purpose:
+
+https://github.com/ctrezevant/Grok
+https://www.ctis.me/s/git
+
+Best regards,
+Charlton Trezevant
