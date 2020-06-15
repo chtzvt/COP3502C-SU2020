@@ -1,5 +1,6 @@
 #include <stdio.h>
-
+#include <stdlib.h>
+#include <string.h>
 
 // MultiStack configuration opts
 #define SIZE 10
@@ -20,17 +21,30 @@ char top(struct stack* stackPtr);
 void display(struct stack* stackPtr);
 
 int checkBalance(char exp[]);
+char* infixToPostfix(char infix[]);
 
 int main() {
-        char valid1[] = "[ A * {B + (C + D)}]";
-        char valid2[] = "[{()()}]";
-        char inv1[] =  "[ A * {B + (C + D})]";
-        char inv2[] = "[ { ( ] ) ( ) }";
 
-        printf("%s is balanced? %d\n", valid1, checkBalance(valid1));
-        printf("%s is balanced? %d\n", valid2, checkBalance(valid2));
-        printf("%s is balanced? %d\n", inv1, checkBalance(inv1));
-        printf("%s is balanced? %d\n", inv2, checkBalance(inv2));
+        char* balanceTests[4] = {
+                "[ A * {B + (C + D)}]",
+                "[{()()}]",
+                "[ A * {B + (C + D})]",
+                "[ { ( ] ) ( ) }"
+        };
+
+        for(int i = 0; i < 4; i++)
+                printf("%s is balanced? %d\n", balanceTests[i], checkBalance(balanceTests[i]));
+
+        char* infixTests[5] = {
+                "((7 - 3) / (2 + 2))",
+                "(5+6)*7-8*9",
+                "(7 - 3) / (2 + 2)",
+                "3+(4*5-(6/7^8)*9)*10",
+                "1000 + 2000"
+        };
+
+        for(int i = 0; i < 5; i++)
+                printf("%s in postfix: %s\n", infixTests[i], infixToPostfix(infixTests[i]));
 
         return 0;
 }
@@ -126,7 +140,59 @@ int isParentheses(char ch){
         }
 }
 
+void append(char* s, char e){
+        for (int i = 0; i < ((sizeof(*s) / sizeof(char)) - 2); i++) {
+                if(s[i] == '\0') {
+                        s[i] = e;
+                        break;
+                }
+        }
+}
 
+char* infixToPostfix(char infix[])
+{
+        printf(">>>>>> %s : %d <<<\n", infix, checkBalance(infix));
+
+        if(checkBalance(infix) == 0)
+                return NULL;
+
+        struct stack s;
+        initialize(&s);
+
+        char* out = malloc(sizeof(char) * strlen(infix));
+        memset(out, '\0', strlen(infix));
+
+        for (int i = 0; infix[i] != '\0'; i++)
+        {
+                if (isOperator(infix[i]))
+                        append(out, infix[i]);
+
+                else if (infix[i] == '(')
+                        push(&s, infix[i]);
+
+                else if (infix[i] == ')')
+                {
+                        while (!empty(&s) && top(&s) != '(')
+                                append(out, pop(&s));
+                        if (!empty(&s) && top(&s) != '(')
+                                return NULL;
+                        else
+                                pop(&s);
+                }
+                else
+                {
+                        while (!empty(&s) && priority(infix[i]) <= priority(top(&s)))
+                                append(out, pop(&s));
+                        push(&s, infix[i]);
+                }
+
+        }
+
+        while (!empty(&s))
+                append(out, pop(&s));
+
+        return out;
+}
 
 
 
