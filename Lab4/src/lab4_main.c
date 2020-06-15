@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 // MultiStack configuration opts
 #define SIZE 10
@@ -42,6 +43,8 @@ int main() {
                 "3+(4*5-(6/7^8)*9)*10",
                 "1000 + 2000"
         };
+
+        printf("\n");
 
         for(int i = 0; i < 5; i++)
                 printf("%s in postfix: %s\n", infixTests[i], infixToPostfix(infixTests[i]));
@@ -115,7 +118,7 @@ int priority(char ch)
 }
 
 int isOperator(char ch){
-        return (priority(ch) != -1) ? 0 : 1;
+        return priority(ch) != -1;
 }
 
 int isParentheses(char ch){
@@ -144,8 +147,6 @@ void append(char* s, char e){
 
 char* infixToPostfix(char infix[])
 {
-        printf(">>>>>> %s : %d <<<\n", infix, checkBalance(infix));
-
         if(checkBalance(infix) == 0)
                 return NULL;
 
@@ -157,32 +158,60 @@ char* infixToPostfix(char infix[])
 
         for (int i = 0; infix[i] != '\0'; i++)
         {
-                if (isOperator(infix[i]))
+                if(isalpha(infix[i]) || isdigit(infix[i]))
                         append(out, infix[i]);
 
-                else if (infix[i] == '(')
+                if (infix[i] == '(')
                         push(&s, infix[i]);
 
-                else if (infix[i] == ')')
+
+                if (infix[i] == ')')
                 {
-                        while (!empty(&s) && top(&s) != '(')
+                        while (!empty(&s) && top(&s) != '(') {
+                                append(out, ' ');
                                 append(out, pop(&s));
-                        if (!empty(&s) && top(&s) != '(')
-                                return NULL;
-                        else
-                                pop(&s);
+                        }
+                        pop(&s);
                 }
-                else
+
+                if (isOperator(infix[i]))
                 {
-                        while (!empty(&s) && priority(infix[i]) <= priority(top(&s)))
-                                append(out, pop(&s));
-                        push(&s, infix[i]);
+                        append(out, ' ');
+
+                        if(empty(&s)) {
+                                push(&s, infix[i]);
+                                continue;
+                        }
+
+                        if(priority(infix[i]) >= priority(top(&s))) {
+                                push(&s, infix[i]);
+                        } else {
+                                while(!empty(&s)) {
+                                        if(top(&s) == '(')
+                                                break;
+
+                                        append(out, pop(&s));
+                                        append(out, ' ');
+                                }
+                                push(&s, infix[i]);
+                        }
                 }
 
         }
 
-        while (!empty(&s))
-                append(out, pop(&s));
+        while (!empty(&s)) {
+                char tmp = top(&s);
+                if(tmp == '(')
+                {
+                        pop(&s);
+                        continue;
+                }
+                if(isOperator(tmp))
+                        append(out, ' ');
+
+                append(out, tmp);
+                pop(&s);
+        }
 
         return out;
 }
