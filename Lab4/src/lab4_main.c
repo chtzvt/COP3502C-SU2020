@@ -36,7 +36,7 @@ int main() {
                 printf("%s is balanced? %d\n", balanceTests[i], checkBalance(balanceTests[i]));
 
         char* infixTests[5] = {
-                "((7 - 3) / (2 + 2))",
+                "(7 - 3) / (2 + 2))",
                 "(5+6)*7-8*9",
                 "(7 - 3) / (2 + 2)",
                 "3+(4*5-(6/7^8)*9)*10",
@@ -63,30 +63,23 @@ int checkBalance(char exp[]){
                         continue;
                 }
 
-                if (empty(&s))
-                        return 0;
-
-                char tmp;
                 switch (exp[i]) {
                 case ')':
-                        tmp = top(&s);
-                        pop(&s);
-                        if (tmp=='{' || tmp=='[')
+                        if(top(&s) != '(')
                                 return 0;
+                        pop(&s);
                         break;
 
                 case '}':
-                        tmp = top(&s);
-                        pop(&s);
-                        if (tmp=='(' || tmp=='[')
+                        if(top(&s) != '{')
                                 return 0;
+                        pop(&s);
                         break;
 
                 case ']':
-                        tmp = top(&s);
-                        pop(&s);
-                        if (tmp =='(' || tmp == '{')
+                        if(top(&s) != '[')
                                 return 0;
+                        pop(&s);
                         break;
                 }
         }
