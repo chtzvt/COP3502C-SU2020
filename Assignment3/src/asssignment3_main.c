@@ -55,6 +55,13 @@ Point *binary_search(Point **arr, int len, Point *val);
 
 Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point **search_points, int *sort_thresh);
 
+Point **ms__arraycopy(Point **arr, int len, int offset);
+void ms__copy_parts_dst(Point **dst, int *dstidx, Point **part, int partidx, int partlen);
+void ms__merge(Point **points, int left, int mid, int right);
+void merge_sort(Point **points, int left, int right);
+
+void insertion_sort(Point **points, int (*cmp)(Point *p1, Point *p2));
+
 // Global user location
 Point *MY_LOCATION;
 
@@ -171,6 +178,41 @@ int main(int argc, char **argv) {
   return 0;
 }
 
+Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point **search_points, int *sort_thresh) {
+  if (!feof(infp)) {
+    MY_LOCATION = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
+    fscanf(infp, "%d %d %d %d %d", &MY_LOCATION->x, &MY_LOCATION->y, n_infected, n_search, sort_thresh);
+  } else {
+    panic("Malformed input file!\n");
+  }
+
+  Point **infected_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_infected));
+
+  for (int i = 0; i < (*n_infected); i++) {
+    if (!feof(infp)) {
+      Point *tmp = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
+      fscanf(infp, "%d %d", &tmp->x, &tmp->y);
+      infected_points[i] = tmp;
+    } else {
+      panic("Malformed input file!\n");
+    }
+  }
+
+  search_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_search));
+
+  for (int i = 0; i < (*n_search); i++) {
+    if (!feof(infp)) {
+      Point *tmp = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
+      fscanf(infp, "%d %d", &tmp->x, &tmp->y);
+      search_points[i] = tmp;
+    } else {
+      panic("Malformed input file!\n");
+    }
+  }
+
+  return infected_points;
+}
+
 Point *point_create(int x, int y) {
   if (abs(x) > CONFIG_MAX_COORD_VALUE || abs(y) > CONFIG_MAX_COORD_VALUE)
     return &EMPTY_POINT;
@@ -222,40 +264,66 @@ int compareTo(Point *p1, Point *p2) {
   return 0;
 }
 
-Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point **search_points, int *sort_thresh) {
-  if (!feof(infp)) {
-    MY_LOCATION = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
-    fscanf(infp, "%d %d %d %d %d", &MY_LOCATION->x, &MY_LOCATION->y, n_infected, n_search, sort_thresh);
-  } else {
-    panic("Malformed input file!\n");
-  }
+//////////////// Merge Sort
+Point **ms__arraycopy(Point **arr, int len, int offset) {
+  Point **vals = mmgr_malloc(g_MEM, sizeof(Point) * len);
 
-  Point **infected_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_infected));
+  for (int i = 0; i < len; i++)
+    vals[i] = arr[i + offset];
 
-  for (int i = 0; i < (*n_infected); i++) {
-    if (!feof(infp)) {
-      Point *tmp = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
-      fscanf(infp, "%d %d", &tmp->x, &tmp->y);
-      infected_points[i] = tmp;
-    } else {
-      panic("Malformed input file!\n");
-    }
-  }
-
-  search_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_search));
-
-  for (int i = 0; i < (*n_search); i++) {
-    if (!feof(infp)) {
-      Point *tmp = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
-      fscanf(infp, "%d %d", &tmp->x, &tmp->y);
-      search_points[i] = tmp;
-    } else {
-      panic("Malformed input file!\n");
-    }
-  }
-
-  return infected_points;
+  return vals;
 }
+
+void ms__copy_parts_dst(Point **dst, int *dstidx, Point **part, int partidx, int partlen) {
+  while (partidx < partlen) {
+    dst[*dstidx] = part[partidx];
+    partidx++;
+    (*dstidx)++;
+  }
+}
+
+void ms__merge(Point **points, int left, int mid, int right) {
+  int l1size = mid - left + 1, l2size = right - mid;
+
+  Point **list1 = ms__arraycopy(points, l1size, left);
+  Point **list2 = ms__arraycopy(points, l2size, mid + 1);
+
+  int i = 0, j = 0, k = left;
+  while (i < l1size && j < l2size) {
+    if (compareTo(list1[i], list2[j]) <= 0) {
+      points[k] = list1[i];
+      i++;
+    } else {
+      points[k] = list2[j];
+      j++;
+    }
+    k++;
+  }
+
+  ms__copy_parts_dst(points, &k, list2, j, l2size);
+  ms__copy_parts_dst(points, &k, list1, i, l1size);
+
+  mmgr_free(g_MEM, list1);
+  mmgr_free(g_MEM, list2);
+}
+
+void merge_sort(Point **points, int left, int right) {
+  int mid = (left + right) / 2;
+  merge_sort(points, left, mid);
+  merge_sort(points, mid + 1, right);
+  ms__merge(points, left, mid, right);
+}
+//////////////// End Merge Sort
+
+//////////////// Insertion Sort
+void insertion_sort(Point **points, int (*cmp)(Point *p1, Point *p2)) {
+}
+//////////////// End Insertion Sort
+
+//////////////// Binary Search
+Point *binary_search(Point **arr, int len, Point *val) {
+}
+//////////////// End Binary Search
 
 ////////////////////////// Util //////////////////////////
 
@@ -290,7 +358,7 @@ void write_out(const char *fmt, ...) {
   va_end(vargs);
 }
 
-////////////////////////// Memory manager v1 //////////////////////////
+////////////////////////// Memory manager //////////////////////////
 
 // Initializes the memory manager's global state table. This tracks all allocated
 // memory, reallocates freed entries, and ensures that all allocated memory is
