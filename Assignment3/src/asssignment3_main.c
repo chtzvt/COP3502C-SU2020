@@ -185,6 +185,9 @@ int main(int argc, char **argv) {
   debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
   mmgr_cleanup(g_MEM); // #noleaks
 
+  debugf(DEBUG_LEVEL_TRACE, "Infile close.\n");
+  fclose(infile);
+
   debugf(DEBUG_LEVEL_TRACE, "Outfile close.\n");
   if (g_outfp != NULL)
     fclose(g_outfp);
