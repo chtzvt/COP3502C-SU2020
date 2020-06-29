@@ -65,10 +65,8 @@ void sort(Point **arr, int len, int alg_thresh);
 Point *binarySearch(Point **arr, int min, int max, Point *val);
 
 // Merge sort prototypes
-Point **ms__arraycopy(Point **arr, int len, int offset);
-void ms__copy_parts_dst(Point **dst, int *dstidx, Point **part, int partidx, int partlen);
-void ms__merge(Point **points, int min, int mid, int max);
-void merge_sort(Point **points, int min, int max);
+void ms__merge(Point **p1, int p1_len, Point **p2, int p2len, Point **dst);
+void merge_sort(Point **points, int len);
 
 // Insertion sort prototypes
 void insertion_sort(Point **arr, int len);
@@ -289,59 +287,43 @@ void sort(Point **arr, int len, int alg_thresh) {
   if (len < alg_thresh)
     insertion_sort(arr, len);
   else
-    merge_sort(arr, 0, len);
+    merge_sort(arr, len);
 }
 
 //////////////// Merge Sort
-Point **ms__arraycopy(Point **arr, int len, int offset) {
-  Point **vals = mmgr_malloc(g_MEM, sizeof(Point) * len);
+void ms__merge(Point **p1, int p1_len, Point **p2, int p2len, Point **dst) {
+  int i1 = 0, i2 = 0, j = 0;
 
-  for (int i = 0; i < len; i++)
-    vals[i] = arr[i + offset];
-
-  return vals;
-}
-
-void ms__copy_parts_dst(Point **dst, int *dstidx, Point **part, int partidx, int partlen) {
-  while (partidx < partlen) {
-    dst[*dstidx] = part[partidx];
-    partidx++;
-    (*dstidx)++;
-  }
-}
-
-void ms__merge(Point **points, int min, int mid, int max) {
-  int l1size = mid - min + 1, l2size = max - mid;
-
-  Point **list1 = ms__arraycopy(points, l1size, min);
-  Point **list2 = ms__arraycopy(points, l2size, mid + 1);
-
-  int i = 0, j = 0, k = min;
-  while (i < l1size && j < l2size) {
-    if (compareTo(list1[i], list2[j]) <= 0) {
-      points[k] = list1[i];
-      i++;
+  while (i1 < p1_len && i2 < p2len) {
+    if (compareTo(p1[i1], p2[i2]) < 0) {
+      dst[j++] = p1[i1++];
     } else {
-      points[k] = list2[j];
-      j++;
+      dst[j++] = p2[i2++];
     }
-    k++;
   }
 
-  ms__copy_parts_dst(points, &k, list2, j, l2size);
-  ms__copy_parts_dst(points, &k, list1, i, l1size);
+  while (i1 < p1_len)
+    dst[j++] = p1[i1++];
+
+  while (i2 < p2len)
+    dst[j++] = p2[i2++];
 }
 
-void merge_sort(Point **points, int min, int max) {
-  if (min > max)
+void merge_sort(Point **points, int len) {
+  if (points == NULL || len < 2)
     return;
 
-  int mid = (min + max) + min / 2;
-  merge_sort(points, min, mid);
-  merge_sort(points, mid + 1, max);
-  ms__merge(points, min, mid, max);
+  merge_sort(points, len / 2);
+  merge_sort(points + (len / 2), len - (len / 2));
+
+  Point **tmp = mmgr_malloc(g_MEM, len * sizeof(Point *));
+  ms__merge(points, len / 2, points + (len / 2), len - (len / 2), tmp);
+
+  for (int i = 0; i < len; i++)
+    points[i] = tmp[i];
+
+  mmgr_free(g_MEM, tmp);
 }
-//////////////// End Merge Sort
 
 //////////////// Insertion Sort
 void insertion_sort(Point **arr, int len) {
