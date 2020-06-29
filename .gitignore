@@ -7,3 +7,4 @@ leak_info.txt
 .DS_Store
 *.a
 *.out
+out.txt
