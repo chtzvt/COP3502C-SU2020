@@ -15,7 +15,6 @@
 #define CONFIG_OUTFILE_NAME "out.txt"
 
 // Maximum values and limits as specified in the project spec
-#define CONFIG_MAX_TEST_CASES 25
 #define CONFIG_MAX_COORD_VALUE 10000
 #define CONFIG_INFECTED_LBOUND 2
 #define CONFIG_INFECTED_UBOUND 1E6
@@ -62,7 +61,7 @@ int compareTo(Point *p1, Point *p2);
 void sort(Point **arr, int len, int alg_thresh);
 
 // Binary search prototype
-Point *binarySearch(Point **arr, int min, int max, Point *val);
+int binary_search(Point **arr, int min, int max, Point *val);
 
 // Merge sort prototypes
 void ms__merge(Point **p1, int p1_len, Point **p2, int p2len, Point **dst);
@@ -173,15 +172,20 @@ int main(int argc, char **argv) {
   // since you end up having to pass a bunch of state information around anyways to do useful work
   Point **infected_points = ReadData(infile, MY_LOCATION, &num_infected, &num_search, search_points, &sort_thresh);
 
-  for (int i = 0; i < num_infected; i++)
-    printf("Point %d: %d %d\n", i, infected_points[i]->x, infected_points[i]->y);
-
   sort(infected_points, num_infected, sort_thresh);
 
-  printf("---- SORTED ----\n");
-
   for (int i = 0; i < num_infected; i++)
     printf("Point %d: %d %d\n", i, infected_points[i]->x, infected_points[i]->y);
+
+  printf("--- %d --- \n", binary_search(infected_points, 0, num_infected, search_points[0]));
+
+  for (int i = 0; i < num_search; i++) {
+    int index = binary_search(infected_points, 0, num_infected, search_points[i]);
+    if (index != -1)
+      printf("%d %d found at rank %d\n", search_points[i]->x, search_points[i]->y, index);
+    else
+      printf("%d %d not found\n", search_points[i]->x, search_points[i]->y);
+  }
 
   debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
   mmgr_cleanup(g_MEM); // #noleaks
@@ -199,18 +203,35 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
     MY_LOCATION = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
     fscanf(infp, "%d %d %d %d %d", &MY_LOCATION->x, &MY_LOCATION->y, n_infected, n_search, sort_thresh);
   } else {
-    panic("Malformed input file!\n");
+    panic("Malformed input file: hit EOF parsing metadata\n");
   }
+
+  if (*n_infected < CONFIG_INFECTED_LBOUND || *n_infected > CONFIG_INFECTED_UBOUND)
+    panic("Malformed input file: %d infected is invalid\n", *n_infected);
+
+  if (*n_search < CONFIG_SEARCH_POINT_LBOUND || *n_search > CONFIG_SEARCH_POINT_UBOUND)
+    panic("Malformed input file: %d search points is invalid\n", *n_search);
+
+  if (*sort_thresh < CONFIG_SEARCH_FUNC_LBOUND || *sort_thresh > CONFIG_SEARCH_FUNC_UBOUND)
+    panic("Malformed input file: %d search threshold is invalid\n", *sort_thresh);
 
   Point **infected_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_infected));
 
   for (int i = 0; i < (*n_infected); i++) {
     if (!feof(infp)) {
-      Point *tmp = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
-      fscanf(infp, "%d %d", &tmp->x, &tmp->y);
+      Point *tmp;
+      int x, y;
+
+      fscanf(infp, "%d %d", &x, &y);
+
+      tmp = point_create(x, y);
+
+      if (tmp == &EMPTY_POINT)
+        panic("Malformed input file: invalid infected coordinate %d %d\n", x, y);
+
       infected_points[i] = tmp;
     } else {
-      panic("Malformed input file!\n");
+      panic("Malformed input file: hit EOF parsing infected coordinates\n");
     }
   }
 
@@ -218,11 +239,19 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
 
   for (int i = 0; i < (*n_search); i++) {
     if (!feof(infp)) {
-      Point *tmp = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
-      fscanf(infp, "%d %d", &tmp->x, &tmp->y);
+      Point *tmp;
+      int x, y;
+
+      fscanf(infp, "%d %d", &x, &y);
+
+      tmp = point_create(x, y);
+
+      if (tmp == &EMPTY_POINT)
+        panic("Malformed input file: invalid search coordinate %d %d\n", x, y);
+
       search_points[i] = tmp;
     } else {
-      panic("Malformed input file!\n");
+      panic("Malformed input file: hit EOF parsing search coordinates\n");
     }
   }
 
@@ -346,19 +375,19 @@ void insertion_sort(Point **arr, int len) {
 //////////////// End Insertion Sort
 
 //////////////// Binary Search
-Point *binarySearch(Point **arr, int min, int max, Point *val) {
+int binary_search(Point **arr, int min, int max, Point *val) {
   if (max < min || arr == NULL || val == &EMPTY_POINT)
-    return &EMPTY_POINT;
+    return -1;
 
   int midpt = min + (max - min) / 2;
 
   if (arr[midpt]->x == val->x && arr[midpt]->y == val->y)
-    return arr[midpt];
+    return midpt;
 
   if (compareTo(arr[midpt], val) < 0)
-    return binarySearch(arr, min, midpt - 1, val);
+    return binary_search(arr, min, midpt - 1, val);
 
-  return binarySearch(arr, midpt + 1, max, val);
+  return binary_search(arr, midpt + 1, max, val);
 }
 //////////////// End Binary Search
 
