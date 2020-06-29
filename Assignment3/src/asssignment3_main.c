@@ -3,12 +3,12 @@
    This program is written by: Charlton Trezevant
  */
 
-#include "leak_detector_c.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "leak_detector_c.h"
 
 ////////////////////////// Global Project Configuation //////////////////////////
 #define CONFIG_INFILE_NAME "in.txt"
