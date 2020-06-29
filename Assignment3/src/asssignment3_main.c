@@ -240,7 +240,11 @@ Point *point_create(int x, int y) {
   return p;
 }
 
+// Frees a point
 void point_destroy(Point *p) {
+  if (p == NULL || p == &EMPTY_POINT)
+    return;
+
   mmgr_free(g_MEM, p);
 }
 
