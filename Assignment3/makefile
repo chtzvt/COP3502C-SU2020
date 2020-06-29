@@ -131,24 +131,24 @@ run:all
 # If the test input file does not exist, an error message will be displayed and
 # Grok will not attempt to run tests.
 # See the top of this file for documentation regarding the test input file.
-test:$(PROJNAME)
-ifneq ("$(wildcard ${CURDIR}/tests/test_input.txt)","")
-	$(info (Grok - Test): Testing "${PROJNAME}" with provided input from ${CURDIR}/tests/test_input.txt...)
-
-# Depending on whether or not arguments are provided for the project in ./test_args.txt, Grok will automatically
-# pass those in when your program is executed
-ifneq ("$(wildcard ${CURDIR}/tests/test_args.txt)","")
-	$(info (Grok - Test): Will test "${PROJNAME}" using arguments provided in ${CURDIR}/tests/test_args.txt...)
-	${CURDIR}/bin/$(PROJNAME) `cat ${CURDIR}/tests/test_args.txt` < ${CURDIR}/tests/test_input.txt
-else
-	${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/tests/test_input.txt
-endif
-else
-	$(error (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist) \
-	Use 'make testfile' or 'make etf' to create one. \
-	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
-endif
-	@echo ""
+test:valgrind
+#ifneq ("$(wildcard ${CURDIR}/tests/test_input.txt)","")
+#	$(info (Grok - Test): Testing "${PROJNAME}" with provided input from ${CURDIR}/tests/test_input.txt...)
+#
+## Depending on whether or not arguments are provided for the project in ./test_args.txt, Grok will automatically
+## pass those in when your program is executed
+#ifneq ("$(wildcard ${CURDIR}/tests/test_args.txt)","")
+#	$(info (Grok - Test): Will test "${PROJNAME}" using arguments provided in ${CURDIR}/tests/test_args.txt...)
+#	${CURDIR}/bin/$(PROJNAME) `cat ${CURDIR}/tests/test_args.txt` < ${CURDIR}/tests/test_input.txt
+#else
+#	${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/tests/test_input.txt
+#endif
+#else
+#	$(error (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist) \
+#	Use 'make testfile' or 'make etf' to create one. \
+#	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
+#endif
+#	@echo ""
 
 # Rule for running Valgrind
 # When called with 'make valgrind', your project will be compiled and then tested
