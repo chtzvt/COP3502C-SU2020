@@ -33,7 +33,7 @@
 #define DEBUG_TRACE_MMGR -7
 
 // Current debug level set/disable
-#define DEBUG DEBUG_LEVEL_INFO
+//#define DEBUG DEBUG_LEVEL_INFO
 
 ////////////////////////// Assignment 3 Prototypes and Global //////////////////////////
 
@@ -91,12 +91,9 @@ void insertion_sort(Point **arr, int len);
 typedef struct MMGR_Entry {
   void *handle;
   size_t size;
-  // todo: gc via refcounts or mark+sweep
-  // allow entries to be marked/given affinities for batched release
 } MMGR_Entry;
 
 typedef struct MMGR {
-  // todo: benchmark current realloc strat vs lili vs pointer hash table
   MMGR_Entry **entries;
   int numEntries;
   int *free; // available recyclable slots
@@ -111,11 +108,10 @@ void mmgr_cleanup(MMGR *tbl);
 void mmgr_mutex_acquire(MMGR *tbl);
 void mmgr_mutex_release(MMGR *tbl);
 
-// Global MMGR instance
 MMGR *g_MEM;
 
 ////////////////////////// Utility //////////////////////////
-FILE *g_outfp = NULL; // output file pointer
+FILE *g_outfp = NULL; // output file pointer (test harness compatibility)
 
 void panic(const char *format, ...);
 void write_out(const char *format, ...);
@@ -166,26 +162,24 @@ int main(int argc, char **argv) {
   }
 
   int num_infected, num_search, sort_thresh;
-  Point **search_points;
+  Point **search_points = NULL;
 
   // Being able to read/parse these values inside of the main function would have been preferable
   // since you end up having to pass a bunch of state information around anyways to do useful work
+  // and don't have to mess around with triple pointers
   Point **infected_points = ReadData(infile, MY_LOCATION, &num_infected, &num_search, &search_points, &sort_thresh);
 
   sort(infected_points, num_infected, sort_thresh);
 
   for (int i = 0; i < num_infected; i++)
-    printf("Point %d: %d %d\n", i, infected_points[i]->x, infected_points[i]->y);
-
-  printf("--- %p --- \n", search_points);
-  printf("--- %d --- \n", binary_search(infected_points, 0, num_infected, search_points[0]));
+    write_out("%d %d\n", infected_points[i]->x, infected_points[i]->y);
 
   for (int i = 0; i < num_search; i++) {
     int index = binary_search(infected_points, 0, num_infected, search_points[i]);
     if (index != -1)
-      printf("%d %d found at rank %d\n", search_points[i]->x, search_points[i]->y, index);
+      write_out("%d %d found at rank %d\n", search_points[i]->x, search_points[i]->y, index + 1);
     else
-      printf("%d %d not found\n", search_points[i]->x, search_points[i]->y);
+      write_out("%d %d not found\n", search_points[i]->x, search_points[i]->y);
   }
 
   debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
@@ -236,7 +230,7 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
     }
   }
 
-  **search_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_search));
+  (*search_points) = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_search));
 
   for (int i = 0; i < (*n_search); i++) {
     if (!feof(infp)) {
@@ -250,7 +244,7 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
       if (tmp == &EMPTY_POINT)
         panic("Malformed input file: invalid search coordinate %d %d\n", x, y);
 
-      *search_points[i] = tmp;
+      (*search_points)[i] = tmp;
     } else {
       panic("Malformed input file: hit EOF parsing search coordinates\n");
     }
@@ -377,7 +371,7 @@ void insertion_sort(Point **arr, int len) {
 
 //////////////// Binary Search
 int binary_search(Point **arr, int min, int max, Point *val) {
-  if (min < 0 || max < min || arr == NULL || val == &EMPTY_POINT)
+  if (max < min || arr == NULL || val == &EMPTY_POINT)
     return -1;
 
   int midpt = min + (max - min) / 2;
@@ -385,7 +379,7 @@ int binary_search(Point **arr, int min, int max, Point *val) {
   if (arr[midpt]->x == val->x && arr[midpt]->y == val->y)
     return midpt;
 
-  if (compareTo(arr[midpt], val) < 0)
+  if (compareTo(arr[midpt], val) > 0)
     return binary_search(arr, min, midpt - 1, val);
 
   return binary_search(arr, midpt + 1, max, val);
@@ -419,8 +413,8 @@ void write_out(const char *fmt, ...) {
   if (g_outfp == NULL)
     g_outfp = stdout;
 
-  vfprintf(stdout, fmt, vargs);
-  fflush(stdout);
+  vfprintf(g_outfp, fmt, vargs);
+  fflush(g_outfp);
 
   va_end(vargs);
 }
