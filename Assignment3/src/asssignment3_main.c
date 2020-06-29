@@ -3,7 +3,7 @@
    This program is written by: Charlton Trezevant
  */
 
-//#include "leak_detector_c.h"
+#include "leak_detector_c.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -120,7 +120,7 @@ void write_out(const char *format, ...);
 
 int main(int argc, char **argv) {
   debugf(DEBUG_LEVEL_TRACE, "Ahmed memory leak detector init.\n");
-  //atexit(report_mem_leak); //Ahmed's memory leak detection
+  atexit(report_mem_leak); //Ahmed's memory leak detection
 
   // Initialize MMGR
   debugf(DEBUG_LEVEL_TRACE, "MMGR init.\n");
