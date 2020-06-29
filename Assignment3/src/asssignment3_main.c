@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
   }
 
   int num_infected, num_search, sort_thresh;
-  Point **search_points = NULL;
+  Point **search_points;
 
   // Being able to read/parse these values inside of the main function would have been preferable
   // since you end up having to pass a bunch of state information around anyways to do useful work
