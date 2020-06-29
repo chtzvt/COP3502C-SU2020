@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
     write_out("%d %d\n", infected_points[i]->x, infected_points[i]->y);
 
   for (int i = 0; i < num_search; i++) {
-    int index = binary_search(infected_points, 0, num_infected, search_points[i]);
+    int index = binary_search(infected_points, 0, num_infected - 1, search_points[i]);
     if (index != -1)
       write_out("%d %d found at rank %d\n", search_points[i]->x, search_points[i]->y, index + 1);
     else
