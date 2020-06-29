@@ -54,7 +54,7 @@ int point_distance(Point *p1, Point *p2);
 Point *MY_LOCATION;
 
 // Input file handling
-Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point **search_points, int *sort_thresh);
+Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point ***search_points, int *sort_thresh);
 
 // Sorting util prototypes
 int compareTo(Point *p1, Point *p2);
@@ -170,13 +170,14 @@ int main(int argc, char **argv) {
 
   // Being able to read/parse these values inside of the main function would have been preferable
   // since you end up having to pass a bunch of state information around anyways to do useful work
-  Point **infected_points = ReadData(infile, MY_LOCATION, &num_infected, &num_search, search_points, &sort_thresh);
+  Point **infected_points = ReadData(infile, MY_LOCATION, &num_infected, &num_search, &search_points, &sort_thresh);
 
   sort(infected_points, num_infected, sort_thresh);
 
   for (int i = 0; i < num_infected; i++)
     printf("Point %d: %d %d\n", i, infected_points[i]->x, infected_points[i]->y);
 
+  printf("--- %p --- \n", search_points);
   printf("--- %d --- \n", binary_search(infected_points, 0, num_infected, search_points[0]));
 
   for (int i = 0; i < num_search; i++) {
@@ -198,7 +199,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point **search_points, int *sort_thresh) {
+Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point ***search_points, int *sort_thresh) {
   if (!feof(infp)) {
     MY_LOCATION = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
     fscanf(infp, "%d %d %d %d %d", &MY_LOCATION->x, &MY_LOCATION->y, n_infected, n_search, sort_thresh);
@@ -235,7 +236,7 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
     }
   }
 
-  search_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_search));
+  **search_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_search));
 
   for (int i = 0; i < (*n_search); i++) {
     if (!feof(infp)) {
@@ -249,7 +250,7 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
       if (tmp == &EMPTY_POINT)
         panic("Malformed input file: invalid search coordinate %d %d\n", x, y);
 
-      search_points[i] = tmp;
+      *search_points[i] = tmp;
     } else {
       panic("Malformed input file: hit EOF parsing search coordinates\n");
     }
@@ -376,7 +377,7 @@ void insertion_sort(Point **arr, int len) {
 
 //////////////// Binary Search
 int binary_search(Point **arr, int min, int max, Point *val) {
-  if (max < min || arr == NULL || val == &EMPTY_POINT)
+  if (min < 0 || max < min || arr == NULL || val == &EMPTY_POINT)
     return -1;
 
   int midpt = min + (max - min) / 2;
