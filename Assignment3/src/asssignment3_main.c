@@ -14,7 +14,7 @@
 #define CONFIG_INFILE_NAME "in.txt"
 #define CONFIG_OUTFILE_NAME "out.txt"
 
-// Maximum values and limits as specified in the project spec
+// Maximum values and limits as given in the project spec
 #define CONFIG_MAX_COORD_VALUE 10000
 #define CONFIG_INFECTED_LBOUND 2
 #define CONFIG_INFECTED_UBOUND 1E6
@@ -46,6 +46,7 @@ typedef struct Point {
 // Empty point marker
 Point EMPTY_POINT = {0, 0};
 
+// Point type methods
 Point *point_create(int x, int y);
 void point_destroy(Point *p);
 int point_distance(Point *p1, Point *p2);
@@ -67,7 +68,7 @@ int binary_search(Point **arr, int min, int max, Point *val);
 void ms__merge(Point **p1, int p1_len, Point **p2, int p2len, Point **dst);
 void merge_sort(Point **points, int len);
 
-// Insertion sort prototypes
+// Insertion sort prototype
 void insertion_sort(Point **arr, int len);
 
 ////////////////////////// Debug Output //////////////////////////
@@ -111,7 +112,7 @@ void mmgr_mutex_release(MMGR *tbl);
 MMGR *g_MEM;
 
 ////////////////////////// Utility //////////////////////////
-FILE *g_outfp = NULL; // output file pointer (test harness compatibility)
+FILE *g_outfp = NULL; // output file pointer (for test harness compatibility)
 
 void panic(const char *format, ...);
 void write_out(const char *format, ...);
@@ -165,15 +166,18 @@ int main(int argc, char **argv) {
   Point **search_points = NULL;
 
   // Being able to read/parse these values inside of the main function would have been preferable
-  // since you end up having to pass a bunch of state information around anyways to do useful work
-  // and don't have to mess around with triple pointers
+  // since you end up having to pass a bunch of state information around anyways and would thus avoid
+  // having to mess around with triple pointers
   Point **infected_points = ReadData(infile, MY_LOCATION, &num_infected, &num_search, &search_points, &sort_thresh);
 
+  // Sort the array with the required function
   sort(infected_points, num_infected, sort_thresh);
 
+  // Print the sorted points
   for (int i = 0; i < num_infected; i++)
     write_out("%d %d\n", infected_points[i]->x, infected_points[i]->y);
 
+  // Search for and print the provided coordinates
   for (int i = 0; i < num_search; i++) {
     int index = binary_search(infected_points, 0, num_infected - 1, search_points[i]);
     if (index != -1)
@@ -182,9 +186,11 @@ int main(int argc, char **argv) {
       write_out("%d %d not found\n", search_points[i]->x, search_points[i]->y);
   }
 
+  // Clean up allocated memory
   debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
   mmgr_cleanup(g_MEM); // #noleaks
 
+  // Close input and output files
   debugf(DEBUG_LEVEL_TRACE, "Infile close.\n");
   fclose(infile);
 
@@ -196,7 +202,11 @@ int main(int argc, char **argv) {
   return 0;
 }
 
+// ReadData does exactly what the name implies
+// It also enforces limits defined in the project specification before anything is instantiated
 Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point ***search_points, int *sort_thresh) {
+
+  // Read in the file metadata
   if (!feof(infp)) {
     MY_LOCATION = (Point *)mmgr_malloc(g_MEM, sizeof(Point));
     fscanf(infp, "%d %d %d %d %d", &MY_LOCATION->x, &MY_LOCATION->y, n_infected, n_search, sort_thresh);
@@ -213,6 +223,7 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
   if (*sort_thresh < CONFIG_SEARCH_FUNC_LBOUND || *sort_thresh > CONFIG_SEARCH_FUNC_UBOUND)
     panic("Malformed input file: %d search threshold is invalid\n", *sort_thresh);
 
+  // Read and parse the infected points list
   Point **infected_points = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_infected));
 
   for (int i = 0; i < (*n_infected); i++) {
@@ -233,6 +244,7 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
     }
   }
 
+  // Read and parse the search points list
   (*search_points) = mmgr_malloc(g_MEM, sizeof(Point *) * (*n_search));
 
   for (int i = 0; i < (*n_search); i++) {
@@ -256,6 +268,9 @@ Point **ReadData(FILE *infp, Point *myloc, int *n_infected, int *n_search, Point
   return infected_points;
 }
 
+// point_create creates a point
+// if the coordinates are invalid, a pointer to the empty point sentinel value
+// is returned
 Point *point_create(int x, int y) {
   if (abs(x) > CONFIG_MAX_COORD_VALUE || abs(y) > CONFIG_MAX_COORD_VALUE)
     return &EMPTY_POINT;
@@ -267,41 +282,50 @@ Point *point_create(int x, int y) {
   return p;
 }
 
-// Frees a point
+// point_destroy destroys a point
 void point_destroy(Point *p) {
   if (p == NULL || p == &EMPTY_POINT)
     return;
 
+  //	"Death am I, and my present task
+  //   Destruction."
   mmgr_free(g_MEM, p);
 }
 
-// Returns the integer distance between two points
+// point_distance deturns the integer distance between two points
+// using the distance formula
 int point_distance(Point *p1, Point *p2) {
   return sqrt(((p1->x - p2->x) * (p1->x - p2->x)) + ((p1->y - p2->y) * (p1->y - p2->y)));
 }
 
+// compareTo compares two points based on the criteria provided in the project
+// specification
 int compareTo(Point *p1, Point *p2) {
   if (p1 == &EMPTY_POINT || p2 == &EMPTY_POINT || MY_LOCATION == &EMPTY_POINT)
     return 0;
 
+  // Points are equal
   if (p1->x == p2->x && p1->y == p2->y)
     return 0;
 
   int dist_p1 = point_distance(p1, MY_LOCATION);
   int dist_p2 = point_distance(p2, MY_LOCATION);
 
+  // Point 2 is farther away
   if (dist_p1 < dist_p2)
     return -1;
 
   if (dist_p1 > dist_p2)
     return 1;
 
+  // Same distance, but point 2 is farther on the x axis
   if (dist_p1 == dist_p2 && p1->x < p2->x)
     return -2;
 
   if (dist_p1 == dist_p2 && p1->x > p2->x)
     return 2;
 
+  // Same distance, but point 2 is farther on the y axis
   if (dist_p1 == dist_p2 && p1->y < p2->y)
     return -3;
 
@@ -311,6 +335,11 @@ int compareTo(Point *p1, Point *p2) {
   return 0;
 }
 
+// Sort dispatches the appropriate sorting algorithm depending on the
+// current threshold.
+// The purpose and use of the threshold value was not clearly explained,
+// so I assumed that it refers to the total length of the given array and
+// that you want to run merge sort for larger arrays
 void sort(Point **arr, int len, int alg_thresh) {
   if (arr == NULL || len > CONFIG_SEARCH_FUNC_UBOUND)
     return;
@@ -322,9 +351,15 @@ void sort(Point **arr, int len, int alg_thresh) {
 }
 
 //////////////// Merge Sort
+
+// Merge sort helper
 void ms__merge(Point **p1, int p1_len, Point **p2, int p2len, Point **dst) {
   int i1 = 0, i2 = 0, j = 0;
 
+  // I didn't bother with making multiple temp arrays. Instead,
+  // the p1 and p2 partitions are actually split out of the
+  // whole input array, and the sorted values are then copied
+  // to a fresh destination array.
   while (i1 < p1_len && i2 < p2len) {
     if (compareTo(p1[i1], p2[i2]) < 0) {
       dst[j++] = p1[i1++];
@@ -333,6 +368,8 @@ void ms__merge(Point **p1, int p1_len, Point **p2, int p2len, Point **dst) {
     }
   }
 
+  // Any remaining elements in the source array are
+  // copied to the destination
   while (i1 < p1_len)
     dst[j++] = p1[i1++];
 
@@ -344,35 +381,43 @@ void merge_sort(Point **points, int len) {
   if (points == NULL || len < 2)
     return;
 
+  // Divide and conquer!
+  // First, we've gotta sort the first and second halves of the input
   merge_sort(points, len / 2);
   merge_sort(points + (len / 2), len - (len / 2));
 
+  // Next we instantiate the destination array and merge the sorted partitions
   Point **tmp = mmgr_malloc(g_MEM, len * sizeof(Point *));
   ms__merge(points, len / 2, points + (len / 2), len - (len / 2), tmp);
 
+  // Overwrite the contents of the original unsorted array with the sorted
+  // contents of the temporary array that we just filled up
   for (int i = 0; i < len; i++)
     points[i] = tmp[i];
 
+  // Free the temporary array
   mmgr_free(g_MEM, tmp);
 }
 
 //////////////// Insertion Sort
-void insertion_sort(Point **arr, int len) {
+// Insertion sort does what it says on the tin
+void insertion_sort(Point **points, int len) {
   Point *val;
   int j;
   for (int i = 1; i < len; i++) {
-    val = arr[i];
+    val = points[i];
     j = i;
-    while (j > 0 && compareTo(arr[j - 1], val) > 0) {
-      arr[j] = arr[j - 1];
+    while (j > 0 && compareTo(points[j - 1], val) > 0) {
+      points[j] = points[j - 1];
       j--;
     }
-    arr[j] = val;
+    points[j] = val;
   }
 }
 //////////////// End Insertion Sort
 
 //////////////// Binary Search
+// This one also does what you would expect
 int binary_search(Point **arr, int min, int max, Point *val) {
   if (max < min || arr == NULL || val == &EMPTY_POINT)
     return -1;
@@ -401,7 +446,7 @@ void panic(const char *fmt, ...) {
   vfprintf(stderr, fmt, vargs);
   fflush(stderr);
   va_end(vargs);
-  // Clean up any allocated memory and exit
+  // Politely clean up any allocated memory and exit
   mmgr_cleanup(g_MEM);
   exit(1);
 }
