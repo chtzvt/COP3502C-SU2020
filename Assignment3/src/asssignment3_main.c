@@ -50,7 +50,6 @@ Point EMPTY_POINT = {0, 0};
 Point *point_create(int x, int y);
 void point_destroy(Point *p);
 int point_distance(Point *p1, Point *p2);
-char *point_string(Point *p);
 
 // Global user location (the single global allowed for the assignment)
 Point *MY_LOCATION;
@@ -63,13 +62,13 @@ int compareTo(Point *p1, Point *p2);
 void sort(Point **arr, int len, int alg_thresh);
 
 // Binary search prototype
-Point *binarySearch(Point **arr, int left, int right, Point *val);
+Point *binarySearch(Point **arr, int min, int max, Point *val);
 
 // Merge sort prototypes
 Point **ms__arraycopy(Point **arr, int len, int offset);
 void ms__copy_parts_dst(Point **dst, int *dstidx, Point **part, int partidx, int partlen);
-void ms__merge(Point **points, int left, int mid, int right);
-void merge_sort(Point **points, int left, int right);
+void ms__merge(Point **points, int min, int mid, int max);
+void merge_sort(Point **points, int min, int max);
 
 // Insertion sort prototypes
 void insertion_sort(Point **arr, int len);
@@ -175,10 +174,16 @@ int main(int argc, char **argv) {
   // Being able to read/parse these values inside of the main function would have been preferable
   // since you end up having to pass a bunch of state information around anyways to do useful work
   Point **infected_points = ReadData(infile, MY_LOCATION, &num_infected, &num_search, search_points, &sort_thresh);
-  sort(infected_points, num_infected, sort_thresh);
 
   for (int i = 0; i < num_infected; i++)
-    printf("Point %d: %s\n", i, point_string(infected_points[i]));
+    printf("Point %d: %d %d\n", i, infected_points[i]->x, infected_points[i]->y);
+
+  sort(infected_points, num_infected, sort_thresh);
+
+  printf("---- SORTED ----\n");
+
+  for (int i = 0; i < num_infected; i++)
+    printf("Point %d: %d %d\n", i, infected_points[i]->x, infected_points[i]->y);
 
   debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
   mmgr_cleanup(g_MEM); // #noleaks
@@ -237,16 +242,6 @@ Point *point_create(int x, int y) {
   return p;
 }
 
-char *point_string(Point *p) {
-  if (p == NULL || p == &EMPTY_POINT)
-    return "[NULL POINT!]";
-
-  char *buf = mmgr_malloc(g_MEM, sizeof(char) * 10);
-  sprintf("%d %d", buf, p->x, p->y);
-
-  return buf;
-}
-
 void point_destroy(Point *p) {
   mmgr_free(g_MEM, p);
 }
@@ -294,7 +289,7 @@ void sort(Point **arr, int len, int alg_thresh) {
   if (len < alg_thresh)
     insertion_sort(arr, len);
   else
-    merge_sort(arr, 0, len - 1);
+    merge_sort(arr, 0, len);
 }
 
 //////////////// Merge Sort
@@ -315,13 +310,13 @@ void ms__copy_parts_dst(Point **dst, int *dstidx, Point **part, int partidx, int
   }
 }
 
-void ms__merge(Point **points, int left, int mid, int right) {
-  int l1size = mid - left + 1, l2size = right - mid;
+void ms__merge(Point **points, int min, int mid, int max) {
+  int l1size = mid - min + 1, l2size = max - mid;
 
-  Point **list1 = ms__arraycopy(points, l1size, left);
+  Point **list1 = ms__arraycopy(points, l1size, min);
   Point **list2 = ms__arraycopy(points, l2size, mid + 1);
 
-  int i = 0, j = 0, k = left;
+  int i = 0, j = 0, k = min;
   while (i < l1size && j < l2size) {
     if (compareTo(list1[i], list2[j]) <= 0) {
       points[k] = list1[i];
@@ -337,14 +332,14 @@ void ms__merge(Point **points, int left, int mid, int right) {
   ms__copy_parts_dst(points, &k, list1, i, l1size);
 }
 
-void merge_sort(Point **points, int left, int right) {
-  if (left > right)
+void merge_sort(Point **points, int min, int max) {
+  if (min > max)
     return;
 
-  int mid = (left + right) / 2;
-  merge_sort(points, left, mid);
-  merge_sort(points, mid + 1, right);
-  ms__merge(points, left, mid, right);
+  int mid = (min + max) + min / 2;
+  merge_sort(points, min, mid);
+  merge_sort(points, mid + 1, max);
+  ms__merge(points, min, mid, max);
 }
 //////////////// End Merge Sort
 
@@ -365,19 +360,19 @@ void insertion_sort(Point **arr, int len) {
 //////////////// End Insertion Sort
 
 //////////////// Binary Search
-Point *binarySearch(Point **arr, int left, int right, Point *val) {
-  if (right < left || arr == NULL || val == &EMPTY_POINT)
+Point *binarySearch(Point **arr, int min, int max, Point *val) {
+  if (max < min || arr == NULL || val == &EMPTY_POINT)
     return &EMPTY_POINT;
 
-  int midpt = left + (right - left) / 2;
+  int midpt = min + (max - min) / 2;
 
   if (arr[midpt]->x == val->x && arr[midpt]->y == val->y)
     return arr[midpt];
 
   if (compareTo(arr[midpt], val) < 0)
-    return binarySearch(arr, left, midpt - 1, val);
+    return binarySearch(arr, min, midpt - 1, val);
 
-  return binarySearch(arr, midpt + 1, right, val);
+  return binarySearch(arr, midpt + 1, max, val);
 }
 //////////////// End Binary Search
 
