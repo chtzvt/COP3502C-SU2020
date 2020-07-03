@@ -30,6 +30,7 @@ MMGR *g_MEM;
 void fill_rand(int *nums, int len);
 int *arr_copy(int *src, int len);
 long timer(int *arr, int len, void sort(int *, int));
+void print_csv(int **results);
 void ms__merge(int *p1, int p1_len, int *p2, int p2len, int *dst);
 void merge_sort(int *points, int len);
 void insertion_sort(int *points, int len);
@@ -41,15 +42,16 @@ void quickSort(int *numbers, int low, int high);
 void quick_sort(int *arr, int len);
 
 #define NUM_TESTS 6
-const int TEST_SIZES[NUM_TESTS] = {10000, 20000, 30000, 40000, 50000, 100000
-}
-;
+const int TEST_SIZES[NUM_TESTS] = {10000, 20000, 30000, 40000, 50000, 100000};
 
+// Test harness container type for
+// dispatching sorting algs
 typedef struct test {
   const char *name;
   void (*func)(int *, int);
 } test;
 
+// Available sorting functions
 #define NUM_FUNCS 5
 const test TEST_FUNCS[NUM_FUNCS] = {
     {"Quick Sort", &quick_sort},
@@ -59,24 +61,40 @@ const test TEST_FUNCS[NUM_FUNCS] = {
     {"Merge Sort", &merge_sort},
 };
 
+// Upper bound of randomly generated values
+#define SORT_VAL_UBOUND 10000
+// Output data in CSV fromat
+#define CSV 1
+
 int main() {
-  printf("YEEHAW\n");
+  g_MEM = mmgr_init();
+
   int **tests = mmgr_malloc(g_MEM, sizeof(int *) * NUM_TESTS);
-  printf("YEEHAW2\n");
+
   for (int i = 0; i < NUM_TESTS; i++) {
-    tests[i] = mmgr_malloc(g_MEM, sizeof(int) * TEST_SIZES[i]);
-    printf("YEEHAW3\n");
-    fill_rand(tests[i], TEST_SIZES[i]);
+    int *tmp = mmgr_malloc(g_MEM, sizeof(int) * TEST_SIZES[i]);
+    fill_rand(tmp, TEST_SIZES[i]);
+    tests[i] = tmp;
   }
 
-  printf("YEEHAW4\n");
+  int **test_results = mmgr_malloc(g_MEM, sizeof(int *) * NUM_FUNCS);
+  for (int i = 0; i < NUM_FUNCS; i++)
+    test_results[i] = mmgr_malloc(g_MEM, sizeof(int *) * NUM_TESTS);
 
   for (int i = 0; i < NUM_TESTS; i++) {
     for (int j = 0; j < NUM_FUNCS; j++) {
       int *tmp = arr_copy(tests[i], TEST_SIZES[i]);
-      printf("Sorting %d values takes %lu milliseconds for %s\n", TEST_SIZES[i], timer(tmp, TEST_SIZES[i], TEST_FUNCS[j].func), TEST_FUNCS[j].name);
+      long sort_time = timer(tmp, TEST_SIZES[i], TEST_FUNCS[j].func);
+      test_results[i][j] = sort_time;
+      printf("Sorting %d values takes %lu milliseconds for %s\n", TEST_SIZES[i], sort_time, TEST_FUNCS[j].name);
     }
   }
+
+  if (CSV == 1) {
+    print_csv(test_results);
+  }
+
+  mmgr_cleanup(g_MEM);
 }
 
 void fill_rand(int *nums, int len) {
@@ -84,7 +102,7 @@ void fill_rand(int *nums, int len) {
     return;
 
   for (int i = 0; i < len; i++)
-    nums[i] = rand() % 1000 + 1;
+    nums[i] = rand() % SORT_VAL_UBOUND + 1;
 }
 
 int *arr_copy(int *src, int len) {
@@ -102,6 +120,25 @@ long timer(int *arr, int len, void sort(int *, int)) {
   sort(arr, len);
   end = clock();
   return ((double)end - start) / CLOCKS_PER_SEC * 1000;
+}
+
+void print_csv(int **results) {
+  printf("Data Size,");
+  for (int i = 0; i < NUM_FUNCS; i++) {
+    char *last = (i + 1 == NUM_FUNCS) ? "" : ",";
+    printf("Run time %s%s", TEST_FUNCS[i].name, last);
+  }
+  printf("\n");
+
+  for (int i = 0; i < NUM_TESTS; i++) {
+    char *last = (i + 1 == NUM_FUNCS) ? "" : ",";
+    printf("%d%s", TEST_SIZES[i], last);
+    for (int j = 0; j < NUM_FUNCS; j++) {
+      char *last = (j + 1 == NUM_FUNCS) ? "" : ",";
+      printf("%d%s", results[i][j], last);
+    }
+    printf("\n");
+  }
 }
 
 // Merge sort helper
