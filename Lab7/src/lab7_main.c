@@ -30,7 +30,7 @@ MMGR *g_MEM;
 void fill_rand(int *nums, int len);
 int *arr_copy(int *src, int len);
 long timer(int *arr, int len, void sort(int *, int));
-void print_csv(int **results);
+void print_csv(long **results);
 void ms__merge(int *p1, int p1_len, int *p2, int p2len, int *dst);
 void merge_sort(int *points, int len);
 void insertion_sort(int *points, int len);
@@ -64,7 +64,7 @@ const test TEST_FUNCS[NUM_FUNCS] = {
 // Upper bound of randomly generated values
 #define SORT_VAL_UBOUND 10000
 // Output data in CSV fromat
-#define CSV 1
+#define CSV 0
 
 int main() {
   g_MEM = mmgr_init();
@@ -77,9 +77,9 @@ int main() {
     tests[i] = tmp;
   }
 
-  int **test_results = mmgr_malloc(g_MEM, sizeof(int *) * NUM_FUNCS);
+  long **test_results = mmgr_malloc(g_MEM, sizeof(long *) * NUM_FUNCS);
   for (int i = 0; i < NUM_FUNCS; i++)
-    test_results[i] = mmgr_malloc(g_MEM, sizeof(int *) * NUM_TESTS);
+    test_results[i] = mmgr_malloc(g_MEM, sizeof(long) * NUM_TESTS);
 
   for (int i = 0; i < NUM_TESTS; i++) {
     for (int j = 0; j < NUM_FUNCS; j++) {
@@ -90,11 +90,10 @@ int main() {
     }
   }
 
-  if (CSV == 1) {
+  if (CSV == 1)
     print_csv(test_results);
-  }
 
-  mmgr_cleanup(g_MEM);
+  return 0;
 }
 
 void fill_rand(int *nums, int len) {
@@ -122,20 +121,17 @@ long timer(int *arr, int len, void sort(int *, int)) {
   return ((double)end - start) / CLOCKS_PER_SEC * 1000;
 }
 
-void print_csv(int **results) {
+void print_csv(long **results) {
   printf("Data Size,");
   for (int i = 0; i < NUM_FUNCS; i++) {
-    char *last = (i + 1 == NUM_FUNCS) ? "" : ",";
-    printf("Run time %s%s", TEST_FUNCS[i].name, last);
+    printf("Run time %s%s", TEST_FUNCS[i].name, (i + 1 == NUM_FUNCS) ? "" : ",");
   }
   printf("\n");
 
   for (int i = 0; i < NUM_TESTS; i++) {
-    char *last = (i + 1 == NUM_FUNCS) ? "" : ",";
-    printf("%d%s", TEST_SIZES[i], last);
+    printf("%d%s", TEST_SIZES[i], (i + 1 == NUM_FUNCS) ? "" : ",");
     for (int j = 0; j < NUM_FUNCS; j++) {
-      char *last = (j + 1 == NUM_FUNCS) ? "" : ",";
-      printf("%d%s", results[i][j], last);
+      printf("%lu%s", results[i][j], (j + 1 == NUM_FUNCS) ? "" : ",");
     }
     printf("\n");
   }
