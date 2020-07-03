@@ -84,6 +84,7 @@ CHANGED_DIRS=`git diff --name-only HEAD~$COMMIT_RANGE_LBOUND..HEAD "*.$SOURCE_FI
 # We'll keep track of the number of build successes/failures here
 FAILED_BUILDS=()
 SUCCESSFUL_BUILDS=()
+SKIPPED_BUILDS=()
 
 # Keep track of dirs that have already been built, so we don't build them twice
 FINISHED_BUILDS=()
@@ -98,7 +99,15 @@ then
 
   for SUBDIR in $BUILDABLE_DIRS;
   do
-
+    
+    # Skip projects marked as non-buildable
+    if [[ -f "${SUBDIR}/tests/GROK_SKIP" ]]
+    then
+      SKIPPED_BUILDS+=("$SUBDIR")
+      continue
+    fi
+    
+    # Skip projects with previously completed builds
     if [[ " ${FINISHED_BUILDS[@]} " =~ " ${SUBDIR} " ]]
     then
       continue
@@ -209,6 +218,12 @@ then
   echo -e "\n Projects with build failures:"
   printf '\t%s\n' "${FAILED_BUILDS[@]}"
   EXCODE=1
+fi
+
+if [[ ${#SKIPPED_BUILDS[@]} -gt 0 ]]
+then
+  echo -e "\n Skipped projects:"
+  printf '\t%s\n' "${SKIPPED_BUILDS[@]}"
 fi
 echo -e "\n----------------------------------\n"
 
