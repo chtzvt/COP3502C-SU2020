@@ -131,7 +131,7 @@ run:all
 # If the test input file does not exist, an error message will be displayed and
 # Grok will not attempt to run tests.
 # See the top of this file for documentation regarding the test input file.
-test:$(MAIN_SRC_FILE)
+dummy:$(MAIN_SRC_FILE)
 ifneq ("$(wildcard ${CURDIR}/tests/test_input.txt)","")
 	$(info (Grok - Test): Testing "${PROJNAME}" with provided input from ${CURDIR}/tests/test_input.txt...)
 
@@ -154,6 +154,7 @@ endif
 # When called with 'make valgrind', your project will be compiled and then tested
 # in the same manner as 'make test', but it will be tested for memory leaks and other
 # errors using Valgrind as well.
+test:valgrind
 valgrind:$(MAIN_SRC_FILE)
 ifeq (, $(shell which valgrind))
 	$(error (Grok - Valgrind): Cannot test "${PROJNAME}", as valgrind does not appear to be installed. Please install valgrind, or check your PATH. \
