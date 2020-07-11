@@ -26,7 +26,10 @@ int hasOnlyRightChild(struct tree_node *node);
 struct tree_node *findNode(struct tree_node *current_ptr, char *value);
 struct tree_node *delete (struct tree_node *root, char *value);
 int numnodes(struct tree_node *root);
+
 int totalchars(struct tree_node *current_ptr);
+int height(struct tree_node *root);
+char *biggest(struct tree_node *root);
 
 int main() {
   struct tree_node *root; //very important line. Otherwise all function will fail
@@ -59,7 +62,9 @@ int main() {
 
   printf("Inorder traversal:\n\t");
   inorder(root);
-  printf("\nTree contains %d characters\n", totalchars(root));
+  printf("\n\nTree contains %d characters\n", totalchars(root));
+  printf("Tree height is: %d\n", height(root));
+  printf("Bigliest word is: %s\n", biggest(root));
 
   while (1) {
     printf("\nSearching in the tree (enter \"exit\" to exit): ");
@@ -84,6 +89,30 @@ int main() {
 loop_exit:;
 
   return 0;
+}
+
+char *biggest(struct tree_node *root) {
+  if (root == NULL)
+    return NULL;
+
+  if (root->right == NULL)
+    return root->data;
+
+  return biggest(root->right);
+}
+
+int height(struct tree_node *root) {
+  int left, right;
+  if (root == NULL)
+    return 0;
+
+  left = height(root->left);
+  right = height(root->right);
+
+  if (left > right)
+    return left + 1;
+
+  return right + 1;
 }
 
 int totalchars(struct tree_node *current_ptr) {
