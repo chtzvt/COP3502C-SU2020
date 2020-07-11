@@ -52,7 +52,7 @@ int main() {
     return 1;
   }
 
-  for (int i = 0; i < num_words; i++) {
+  for (int i = 0; i < num_words - 1; i++) {
     char tmp[20];
     if (!feof(infile)) {
       fscanf(infile, "%s", tmp);
