@@ -1,0 +1,13 @@
+12
+cat
+bear
+dog
+bat
+bird
+ant
+deer
+fish
+lion
+fox
+wolf
+duck
