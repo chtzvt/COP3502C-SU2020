@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
   }
 
   trie_node *root = trie_node_create();
-  int n_cmds;
+  int n_cmds = 0;
 
   if (!feof(infile)) {
     fscanf(infile, "%d", &n_cmds);
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
 
 trie_node *trie_node_create() {
   trie_node *tmp = mmgr_malloc(g_MEM, sizeof(trie_node));
-  tmp->children = mmgr_malloc(g_MEM, sizeof(trie_node *) * CONFIG_ALPHABET_LEN);
+  tmp->children = (trie_node **)mmgr_malloc(g_MEM, sizeof(trie_node *) * CONFIG_ALPHABET_LEN);
   tmp->freq = 0;
   tmp->isEnd = 0;
   return tmp;
@@ -214,12 +214,17 @@ trie_node *trie_node_insert(trie_node *root, const char c) {
   if (root == NULL || root == &EMPTY_NODE)
     return &EMPTY_NODE;
 
-  if (root->children[(int)c] == NULL)
-    root->children[(int)c] = trie_node_create();
+  int index = (int)c - 97;
 
-  root->children[(int)c]->freq++;
+  if (index > CONFIG_ALPHABET_LEN - 1)
+    return &EMPTY_NODE;
 
-  return root->children[(int)c];
+  if (root->children[index] == NULL)
+    root->children[index] = trie_node_create();
+
+  root->children[index]->freq++;
+
+  return root->children[index];
 }
 
 void trie_insert(trie_node *root, const char *str) {
@@ -230,7 +235,7 @@ void trie_insert(trie_node *root, const char *str) {
   trie_node *cursor = root;
 
   for (int i = 0; i < len; i++) {
-    cursor = trie_node_insert(cursor, str[i]);
+    cursor = trie_node_insert(cursor, (int)(str[i]) - 97);
   }
 
   cursor->isEnd = 1;
@@ -241,7 +246,7 @@ trie_node *trie_search(trie_node *root, const char *str) {
   trie_node *cursor = root;
 
   for (int i = 0; i < len; i++) {
-    int idx = ((int)str[i] - (int)'a');
+    int idx = ((int)str[i] - 97);
 
     if (cursor->children[idx] == &EMPTY_NODE || cursor->children[idx] == NULL)
       return 0;
