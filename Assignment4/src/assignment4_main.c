@@ -258,7 +258,7 @@ trie_node *trie_search(trie_node *root, const char *str) {
 char *trie_suggest(trie_node *root, const char *str) {
   trie_node *pfx_root = trie_search(root, str);
 
-  if (pfx_root == &EMPTY_NODE)
+  if (pfx_root == NULL || pfx_root == &EMPTY_NODE || pfx_root->children == NULL)
     return &NOT_FOUND;
 
   char *sug = mmgr_malloc(g_MEM, sizeof(char) * CONFIG_ALPHABET_LEN);
