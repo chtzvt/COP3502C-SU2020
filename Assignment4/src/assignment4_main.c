@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
         fscanf(infile, "%s", str);
         found = trie_suggest(root, str);
         debugf(DEBUG_LEVEL_TRACE, "Suggest: %s\n", str);
-        if (found != &NOT_FOUND)
+        if (found != &NOT_FOUND && strlen(found) > 0)
           write_out("%s\n", found);
         else
           write_out("unknown word\n");
@@ -308,6 +308,7 @@ char *trie_suggest(trie_node *root, const char *str) {
 
     if (pfx_root->children[i]->freq == likely) {
       sug[sug_i] = index_to_char(i);
+      sug_i++;
     }
   }
 
