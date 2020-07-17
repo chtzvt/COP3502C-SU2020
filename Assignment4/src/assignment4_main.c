@@ -14,6 +14,7 @@
 #define CONFIG_INFILE_NAME "in.txt"
 #define CONFIG_OUTFILE_NAME "out.txt"
 #define CONFIG_ALPHABET_LEN 26
+#define CONFIG_ASCII_BASE 97
 
 // Global debug levels
 #define DEBUG_LEVEL_ALL 0
@@ -207,14 +208,14 @@ void trie_node_destroy(trie_node *node) {
 }
 
 char index_to_char(int i) {
-  return (char)(97 + i);
+  return (char)(CONFIG_ASCII_BASE + i);
 }
 
 trie_node *trie_node_insert(trie_node *root, const char c) {
-  if (root == NULL || root == &EMPTY_NODE)
+  if (root == NULL || root == &EMPTY_NODE || root->children == NULL)
     return &EMPTY_NODE;
 
-  int index = (int)c - 97;
+  int index = (int)c - CONFIG_ASCII_BASE;
 
   if (index > CONFIG_ALPHABET_LEN - 1)
     return &EMPTY_NODE;
@@ -235,7 +236,7 @@ void trie_insert(trie_node *root, const char *str) {
   trie_node *cursor = root;
 
   for (int i = 0; i < len; i++) {
-    cursor = trie_node_insert(cursor, (int)(str[i]) - 97);
+    cursor = trie_node_insert(cursor, (int)(str[i]) - CONFIG_ASCII_BASE);
   }
 
   cursor->isEnd = 1;
@@ -246,7 +247,7 @@ trie_node *trie_search(trie_node *root, const char *str) {
   trie_node *cursor = root;
 
   for (int i = 0; i < len; i++) {
-    int idx = ((int)str[i] - 97);
+    int idx = ((int)str[i] - CONFIG_ASCII_BASE);
 
     if (cursor->children[idx] == &EMPTY_NODE || cursor->children[idx] == NULL)
       return 0;
