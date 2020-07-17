@@ -67,8 +67,8 @@ CPYEAR=2020
 # The full path to the current project's main source file
 PROJSRC=$(wildcard ${CURDIR}/src/*_main.c)
 # The "human" name of the current project (e.g. foo_main.c becomes foo)
-MAIN_SRC_FILE=$(subst _main.c,,$(subst ${CURDIR}/src/,,$(PROJSRC)))
-PROJNAME= $(shell echo $(shell basename $(CURDIR)) | tr A-Z a-z)
+PROJNAME=$(subst _main.c,,$(subst ${CURDIR}/src/,,$(PROJSRC)))
+
 
 # Default Make rules to build your project.
 # Run any of these (make all or make projectname or make build, even just 'make') if
@@ -76,8 +76,8 @@ PROJNAME= $(shell echo $(shell basename $(CURDIR)) | tr A-Z a-z)
 # These rules are effectively aliases to the 'build' rule, and do the same thing
 all:build
 # make <your project name> (e.g. for a project foo_main.c, use 'make foo')
-$(MAIN_SRC_FILE):build
 $(PROJNAME):build
+
 
 # Make rule to compile your project
 # When calling 'make test', this rule will run first to compile the project before testing.
@@ -94,7 +94,7 @@ ifneq ("$(PROJSRC)","")
 # This will produce a binary in ./bin/, with the name of your project
 # $@ is the project name foo, $^ is the full path to the source file foo_main.c
 # Note: the flag -std=c99 tells GCC to compile for C99 syntax (ISO/IEC 9899:1999)
-	gcc -Wall -g -std=c99 -o ${CURDIR}/bin/$(PROJNAME) $^
+	gcc -Wall -g -std=c99 -o ${CURDIR}/bin/$(PROJNAME) $^ ${CURDIR}/src/leak_detector_c.c -lm
 # Set the execuable bit on the binary produced by GCC
 # In some cases, this may not always be necessary. But we'll do it anyways.
 	@chmod +x ${CURDIR}/bin/$(PROJNAME)
@@ -131,30 +131,30 @@ run:all
 # If the test input file does not exist, an error message will be displayed and
 # Grok will not attempt to run tests.
 # See the top of this file for documentation regarding the test input file.
-test:$(MAIN_SRC_FILE)
-ifneq ("$(wildcard ${CURDIR}/tests/test_input.txt)","")
-	$(info (Grok - Test): Testing "${PROJNAME}" with provided input from ${CURDIR}/tests/test_input.txt...)
-
-# Depending on whether or not arguments are provided for the project in ./test_args.txt, Grok will automatically
-# pass those in when your program is executed
-ifneq ("$(wildcard ${CURDIR}/tests/test_args.txt)","")
-	$(info (Grok - Test): Will test "${PROJNAME}" using arguments provided in ${CURDIR}/tests/test_args.txt...)
-	${CURDIR}/bin/$(PROJNAME) `cat ${CURDIR}/tests/test_args.txt` < ${CURDIR}/tests/test_input.txt
-else
-	${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/tests/test_input.txt
-endif
-else
-	$(error (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist) \
-	Use 'make testfile' or 'make etf' to create one. \
-	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
-endif
-	@echo ""
+test:valgrind
+#ifneq ("$(wildcard ${CURDIR}/tests/test_input.txt)","")
+#	$(info (Grok - Test): Testing "${PROJNAME}" with provided input from ${CURDIR}/tests/test_input.txt...)
+#
+## Depending on whether or not arguments are provided for the project in ./test_args.txt, Grok will automatically
+## pass those in when your program is executed
+#ifneq ("$(wildcard ${CURDIR}/tests/test_args.txt)","")
+#	$(info (Grok - Test): Will test "${PROJNAME}" using arguments provided in ${CURDIR}/tests/test_args.txt...)
+#	${CURDIR}/bin/$(PROJNAME) `cat ${CURDIR}/tests/test_args.txt` < ${CURDIR}/tests/test_input.txt
+#else
+#	${CURDIR}/bin/$(PROJNAME) < ${CURDIR}/tests/test_input.txt
+#endif
+#else
+#	$(error (Grok - Test): Will not test "${PROJNAME}", as no test input is available! (${CURDIR}/tests/test_input.txt doesn't exist) \
+#	Use 'make testfile' or 'make etf' to create one. \
+#	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
+#endif
+#	@echo ""
 
 # Rule for running Valgrind
 # When called with 'make valgrind', your project will be compiled and then tested
 # in the same manner as 'make test', but it will be tested for memory leaks and other
 # errors using Valgrind as well.
-valgrind:$(MAIN_SRC_FILE)
+valgrind:$(PROJNAME)
 ifeq (, $(shell which valgrind))
 	$(error (Grok - Valgrind): Cannot test "${PROJNAME}", as valgrind does not appear to be installed. Please install valgrind, or check your PATH. \
 	For detailed documentation, please run 'cat ${CURDIR}/makefile | more' in your terminal.)
@@ -192,30 +192,12 @@ testargs:
 	@touch ${CURDIR}/tests/test_args.txt
 	${EDITOR} ${CURDIR}/tests/test_args.txt
 
-# This rule ('make skip') tells Grok to skip testing
-skip:
-	$(info (Grok - Skip Testing): Marking "${PROJNAME}" to skip autobuild)
-	@mkdir -p ${CURDIR}/tests/
-	@touch ${CURDIR}/tests/GROK_SKIP
-
-# This rule ('make unskip') tells Grok to resume testing
-unskip:
-	$(info (Grok - Skip Testing): Marking "${PROJNAME}" to resume autobuild)
-	@rm -f ${CURDIR}/tests/GROK_SKIP
-
 # This rule ('make etf') creates an empty test_input.txt for you.
 etf:
 	$(info (Grok - Create Test File): Creating empty test_input.txt and test_args.txt files for "${PROJNAME}"...)
 	mkdir -p ${CURDIR}/tests/
 	touch ${CURDIR}/tests/test_input.txt
 	touch ${CURDIR}/tests/test_args.txt
-
-# This rule ('make init') initializes a project directory
-init:etf
-	$(info (Grok - Initializing Project Directory): Creating empty test_input.txt and test_args.txt files for "${PROJNAME}"...)
-	mkdir -p ${CURDIR}/spec/
-	mkdir -p ${CURDIR}/src/
-	touch ${CURDIR}/src/${PROJNAME}_main.c
 
 # Static code analysis
 # This rule will run scan-build against your project's source code, which will alert
