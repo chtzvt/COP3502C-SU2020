@@ -20,13 +20,16 @@
 #define DEBUG_LEVEL_ALL 0
 #define DEBUG_LEVEL_TRACE 1
 #define DEBUG_LEVEL_INFO 2
+#define DEBUG_TRACE_SEARCH -4
+#define DEBUG_TRACE_SUGGEST -5
+#define DEBUG_TRACE_INSERT -6
 
 // Functionality-specific debug levels
 // These enable debug output only for specific sections of the program
 #define DEBUG_TRACE_MMGR -7
 
 // Current debug level set/disable
-//#define DEBUG DEBUG_LEVEL_INFO
+#define DEBUG DEBUG_TRACE_SEARCH
 
 ////////////////////////// Assignment 4 Prototypes and Globals //////////////////////////
 
@@ -154,10 +157,12 @@ int main(int argc, char **argv) {
 
     if (!feof(infile)) {
       fscanf(infile, "%d", &cmd_type);
+      debugf(DEBUG_LEVEL_TRACE, "Command type: %d\n", cmd_type);
 
       switch (cmd_type) {
       case 1:
         fscanf(infile, "%s %d", str, &num_insertions);
+        debugf(DEBUG_LEVEL_TRACE, "Insert: %s %d times\n", str, num_insertions);
         for (int j = 0; j < num_insertions; j++) {
           trie_insert(root, str);
         }
@@ -166,6 +171,7 @@ int main(int argc, char **argv) {
       case 2:
         fscanf(infile, "%s", str);
         found = trie_suggest(root, str);
+        debugf(DEBUG_LEVEL_TRACE, "Suggest: %s\n", str);
         if (found != &NOT_FOUND)
           write_out("%s\n", found);
         else
@@ -211,17 +217,23 @@ char index_to_char(int i) {
   return (char)(CONFIG_ASCII_BASE + i);
 }
 
-trie_node *trie_node_insert(trie_node *root, const char c) {
-  if (root == NULL || root == &EMPTY_NODE || root->children == NULL)
+trie_node *trie_node_insert(trie_node *root, char c) {
+  if (root == NULL || root == &EMPTY_NODE || root->children == NULL) {
+    debugf(DEBUG_TRACE_INSERT, "node_insert: given bad node for char '%c'\n", c);
     return &EMPTY_NODE;
+  }
 
   int index = (int)c - CONFIG_ASCII_BASE;
+
+  debugf(DEBUG_TRACE_INSERT, "node_insert: calculate index of char '%c' = %d\n", c, index);
 
   if (index > CONFIG_ALPHABET_LEN - 1)
     return &EMPTY_NODE;
 
-  if (root->children[index] == NULL)
+  if (root->children[index] == NULL) {
+    debugf(DEBUG_TRACE_INSERT, "node_insert: parent node has no child for char '%c', creating\n", c);
     root->children[index] = trie_node_create();
+  }
 
   root->children[index]->freq++;
 
@@ -229,14 +241,19 @@ trie_node *trie_node_insert(trie_node *root, const char c) {
 }
 
 void trie_insert(trie_node *root, const char *str) {
-  if (root == NULL || root == &EMPTY_NODE)
+  if (root == NULL || root == &EMPTY_NODE) {
+    debugf(DEBUG_TRACE_INSERT, "trie_node: given bad node for %s\n", str);
     return;
+  }
 
   int len = strlen(str);
   trie_node *cursor = root;
 
+  debugf(DEBUG_TRACE_INSERT, "trie_insert: calculate len of '%s' = %d\n", str, len);
+
   for (int i = 0; i < len; i++) {
-    cursor = trie_node_insert(cursor, (int)(str[i]) - CONFIG_ASCII_BASE);
+    debugf(DEBUG_TRACE_INSERT, "trie_insert: create node to contain '%c' at index %d\n", str[i], i);
+    cursor = trie_node_insert(cursor, str[i]);
   }
 
   cursor->isEnd = 1;
@@ -249,23 +266,30 @@ trie_node *trie_search(trie_node *root, const char *str) {
   for (int i = 0; i < len; i++) {
     int idx = ((int)str[i] - CONFIG_ASCII_BASE);
 
-    if (cursor->children[idx] == &EMPTY_NODE || cursor->children[idx] == NULL)
+    if (cursor->children[idx] == &EMPTY_NODE || cursor->children[idx] == NULL) {
+      debugf(DEBUG_TRACE_SEARCH, "search: interrupted finding '%s', intermediate node %d has no children\n", str, i);
       return 0;
+    }
 
     cursor = cursor->children[idx];
   }
 
-  if (cursor != NULL && cursor != &EMPTY_NODE && cursor->isEnd == 1)
+  if (cursor != NULL && cursor != &EMPTY_NODE && cursor->isEnd == 1) {
+    debugf(DEBUG_TRACE_SEARCH, "search: '%s' was found\n", str);
     return cursor;
-  else
+  } else {
+    debugf(DEBUG_TRACE_SEARCH, "search: couldn't find '%s'\n", str);
     return &EMPTY_NODE;
+  }
 }
 
 char *trie_suggest(trie_node *root, const char *str) {
   trie_node *pfx_root = trie_search(root, str);
 
-  if (pfx_root == NULL || pfx_root == &EMPTY_NODE || pfx_root->children == NULL)
+  if (pfx_root == NULL || pfx_root == &EMPTY_NODE || pfx_root->children == NULL) {
+    debugf(DEBUG_TRACE_SUGGEST, "suggest: got bad node from search\n");
     return &NOT_FOUND;
+  }
 
   char *sug = mmgr_malloc(g_MEM, sizeof(char) * CONFIG_ALPHABET_LEN);
   int likely = 0, sug_i = 0;
