@@ -271,18 +271,42 @@ void trie_insert(trie_node *root, const char *str) {
 
   int len = strlen(str);
   trie_node *cursor = root;
+  trie_node **path = mmgr_malloc(g_MEM, sizeof(char) * len);
 
   debugf(DEBUG_TRACE_INSERT, "trie_insert: calculate len of '%s' = %d\n", str, len);
 
   for (int i = 0; i < len; i++) {
     debugf(DEBUG_TRACE_INSERT, "trie_insert: create node to contain '%c' at index %d\n", str[i], i);
     cursor = trie_node_insert(cursor, str[i]);
+    cursor->sum_freq++;
 
-    if (cursor == &EMPTY_NODE)
+    path[i] = cursor;
+
+    if (cursor == &EMPTY_NODE || path[i] == NULL)
       break;
   }
 
   cursor->isEnd = 1;
+
+  // Calculate current child maxumum frequency for each node in
+  // the path that was taken to insert the given prefix into the
+  // trie
+  int tmp_child_max = 0;
+  for (int i = len - 1; i-- > 0;) {
+    if (path[i] == &EMPTY_NODE || path[i] == NULL)
+      continue;
+
+    for (int j = 0; j < CONFIG_ALPHABET_LEN; j++) {
+      if (path[i]->children[j] == NULL || path[i]->children[j] == &EMPTY_NODE)
+        continue;
+
+      if (path[i]->children[j]->freq > tmp_child_max)
+        tmp_child_max = path[i]->children[j]->freq;
+    }
+
+    path[i]->cur_max_freq = tmp_child_max;
+    tmp_child_max = 0;
+  }
 }
 
 // Searches a trie for a given string
