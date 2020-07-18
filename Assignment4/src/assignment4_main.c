@@ -29,13 +29,15 @@
 #define DEBUG_TRACE_MMGR -7
 
 // Current debug level set/disable
-#define DEBUG DEBUG_TRACE_SEARCH
+//#define DEBUG DEBUG_LEVEL_ALL
 
 ////////////////////////// Assignment 4 Prototypes and Globals //////////////////////////
 
 typedef struct trie_node {
   struct trie_node **children;
   int freq;
+  int sum_freq;
+  int cur_max_freq;
   int isEnd;
 } trie_node;
 
@@ -45,9 +47,12 @@ char NOT_FOUND;
 trie_node *trie_node_create();
 void trie_node_destroy(trie_node *node);
 trie_node *trie_node_insert(trie_node *root, const char c);
+
 void trie_insert(trie_node *root, const char *str);
 trie_node *trie_search(trie_node *root, const char *str);
 char *trie_suggest(trie_node *root, const char *str);
+
+char index_to_char(int i);
 
 ////////////////////////// Debug Output //////////////////////////
 // (c) Charlton Trezevant - 2018
@@ -171,7 +176,7 @@ int main(int argc, char **argv) {
       case 2:
         fscanf(infile, "%s", str);
         found = trie_suggest(root, str);
-        debugf(DEBUG_LEVEL_TRACE, "Suggest: %s\n", str);
+        debugf(DEBUG_LEVEL_TRACE, "Running suggest on '%s', got '%s'\n", str, found);
         if (found != &NOT_FOUND && strlen(found) > 0)
           write_out("%s\n", found);
         else
@@ -201,6 +206,8 @@ trie_node *trie_node_create() {
   trie_node *tmp = mmgr_malloc(g_MEM, sizeof(trie_node));
   tmp->children = (trie_node **)mmgr_malloc(g_MEM, sizeof(trie_node *) * CONFIG_ALPHABET_LEN);
   tmp->freq = 0;
+  tmp->sum_freq = 0;
+  tmp->cur_max_freq = 0;
   tmp->isEnd = 0;
   return tmp;
 }
@@ -254,6 +261,9 @@ void trie_insert(trie_node *root, const char *str) {
   for (int i = 0; i < len; i++) {
     debugf(DEBUG_TRACE_INSERT, "trie_insert: create node to contain '%c' at index %d\n", str[i], i);
     cursor = trie_node_insert(cursor, str[i]);
+
+    if (cursor == &EMPTY_NODE)
+      break;
   }
 
   cursor->isEnd = 1;
@@ -274,7 +284,7 @@ trie_node *trie_search(trie_node *root, const char *str) {
     cursor = cursor->children[idx];
   }
 
-  if (cursor != NULL && cursor != &EMPTY_NODE && cursor->isEnd == 1) {
+  if (cursor != NULL && cursor != &EMPTY_NODE) {
     debugf(DEBUG_TRACE_SEARCH, "search: '%s' was found\n", str);
     return cursor;
   } else {
@@ -302,11 +312,14 @@ char *trie_suggest(trie_node *root, const char *str) {
       likely = pfx_root->children[i]->freq;
   }
 
+  debugf(DEBUG_TRACE_SUGGEST, "suggest: determined most likely frequency threshold is %d\n", likely);
+
   for (int i = 0; i < CONFIG_ALPHABET_LEN; i++) {
     if (pfx_root->children[i] == NULL || pfx_root->children[i] == &EMPTY_NODE)
       continue;
 
     if (pfx_root->children[i]->freq == likely) {
+      debugf(DEBUG_TRACE_SUGGEST, "suggest: found likely character '%c' at index %d\n", index_to_char(i), i);
       sug[sug_i] = index_to_char(i);
       sug_i++;
     }
