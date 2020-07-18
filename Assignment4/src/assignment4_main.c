@@ -257,6 +257,7 @@ trie_node *trie_node_insert(trie_node *root, char c) {
     root->children[index] = trie_node_create();
   }
 
+  // Increments individual node frequency
   root->children[index]->freq++;
 
   return root->children[index];
@@ -271,13 +272,14 @@ void trie_insert(trie_node *root, const char *str) {
 
   int len = strlen(str);
   trie_node *cursor = root;
-  trie_node **path = mmgr_malloc(g_MEM, sizeof(char) * len);
+  trie_node **path = (trie_node **)mmgr_malloc(g_MEM, sizeof(trie_node *) * len);
 
   debugf(DEBUG_TRACE_INSERT, "trie_insert: calculate len of '%s' = %d\n", str, len);
 
   for (int i = 0; i < len; i++) {
     debugf(DEBUG_TRACE_INSERT, "trie_insert: create node to contain '%c' at index %d\n", str[i], i);
     cursor = trie_node_insert(cursor, str[i]);
+    // Increment frequencies for which this string is a prefix of words in the dictionary
     cursor->sum_freq++;
 
     path[i] = cursor;
@@ -286,11 +288,12 @@ void trie_insert(trie_node *root, const char *str) {
       break;
   }
 
+  // Mark the last node inserted in the trie as the end of the
+  // string
   cursor->isEnd = 1;
 
-  // Calculate current child maxumum frequency for each node in
-  // the path that was taken to insert the given prefix into the
-  // trie
+  // Calculate the current maximum frequency of any child node for
+  // each node in the path that was taken to insert the given string
   int tmp_child_max = 0;
   for (int i = len - 1; i-- > 0;) {
     if (path[i] == &EMPTY_NODE || path[i] == NULL)
