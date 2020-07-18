@@ -359,8 +359,8 @@ char *trie_suggest(trie_node *root, const char *str) {
     if (pfx_root->children[i] == NULL || pfx_root->children[i] == &EMPTY_NODE)
       continue;
 
-    if (pfx_root->children[i]->freq > likely)
-      likely = pfx_root->children[i]->freq;
+    if (pfx_root->children[i]->sum_freq > likely)
+      likely = pfx_root->children[i]->sum_freq;
   }
 
   debugf(DEBUG_TRACE_SUGGEST, "suggest: determined most likely frequency threshold is %d\n", likely);
@@ -373,7 +373,7 @@ char *trie_suggest(trie_node *root, const char *str) {
     if (pfx_root->children[i] == NULL || pfx_root->children[i] == &EMPTY_NODE)
       continue;
 
-    if (pfx_root->children[i]->freq == likely) {
+    if (pfx_root->children[i]->sum_freq == likely) {
       debugf(DEBUG_TRACE_SUGGEST, "suggest: found likely character '%c' at index %d\n", index_to_char(i), i);
       sug[sug_i] = index_to_char(i);
       sug_i++;
@@ -387,7 +387,7 @@ char *trie_suggest(trie_node *root, const char *str) {
 
 // Panic is called when something goes wrong and we have to die for the greater good
 void panic(const char *fmt, ...) {
-  // Vargs to behave like printf (but not to make black metal)
+  // Vargs to behave like printf (but not for black metal)
   va_list vargs;
   va_start(vargs, fmt);
   debugf(DEBUG_LEVEL_ALL, "panic called\n");
