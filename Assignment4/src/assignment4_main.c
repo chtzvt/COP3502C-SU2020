@@ -41,6 +41,8 @@ typedef struct trie_node {
   int isEnd;
 } trie_node;
 
+// Sentinel values
+// Used as error markers in lieu of NULL
 trie_node EMPTY_NODE;
 char NOT_FOUND;
 
@@ -145,9 +147,11 @@ int main(int argc, char **argv) {
     debugf(DEBUG_LEVEL_INFO, "Output file name: %s\n", CONFIG_OUTFILE_NAME);
   }
 
+  // Instantiate the root of the trie
   trie_node *root = trie_node_create();
-  int n_cmds = 0;
 
+  // Read in the number of commands to process
+  int n_cmds = 0;
   if (!feof(infile)) {
     fscanf(infile, "%d", &n_cmds);
   } else {
@@ -155,17 +159,21 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  // Command processing loop
   for (int i = 0; i < n_cmds; i++) {
+    // Input buffer and temporary variables for use
+    // in command processing
     char str[50];
     int cmd_type, num_insertions;
     char *found;
 
     if (!feof(infile)) {
+      // Read command type
       fscanf(infile, "%d", &cmd_type);
       debugf(DEBUG_LEVEL_TRACE, "Command type: %d\n", cmd_type);
 
       switch (cmd_type) {
-      case 1:
+      case 1: // Insertion
         fscanf(infile, "%s %d", str, &num_insertions);
         debugf(DEBUG_LEVEL_TRACE, "Insert: %s %d times\n", str, num_insertions);
         for (int j = 0; j < num_insertions; j++) {
@@ -173,7 +181,7 @@ int main(int argc, char **argv) {
         }
         break;
 
-      case 2:
+      case 2: // Queries
         fscanf(infile, "%s", str);
         found = trie_suggest(root, str);
         debugf(DEBUG_LEVEL_TRACE, "Running suggest on '%s', got '%s'\n", str, found);
@@ -202,6 +210,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
+// Allocates and initializes a trie node
 trie_node *trie_node_create() {
   trie_node *tmp = mmgr_malloc(g_MEM, sizeof(trie_node));
   tmp->children = (trie_node **)mmgr_malloc(g_MEM, sizeof(trie_node *) * CONFIG_ALPHABET_LEN);
@@ -212,6 +221,7 @@ trie_node *trie_node_create() {
   return tmp;
 }
 
+// Destroys a trie node
 void trie_node_destroy(trie_node *node) {
   if (node == NULL || node == &EMPTY_NODE)
     return;
@@ -220,10 +230,12 @@ void trie_node_destroy(trie_node *node) {
   free(node);
 }
 
+// Converts an index in a trie node's child array into an ASCII character
 char index_to_char(int i) {
   return (char)(CONFIG_ASCII_BASE + i);
 }
 
+// Inserts a single character into a trie
 trie_node *trie_node_insert(trie_node *root, char c) {
   if (root == NULL || root == &EMPTY_NODE || root->children == NULL) {
     debugf(DEBUG_TRACE_INSERT, "node_insert: given bad node for char '%c'\n", c);
@@ -234,9 +246,12 @@ trie_node *trie_node_insert(trie_node *root, char c) {
 
   debugf(DEBUG_TRACE_INSERT, "node_insert: calculate index of char '%c' = %d\n", c, index);
 
+  // Return an error sentinel value if an invalid index is calculated based on the
+  // provided character
   if (index > CONFIG_ALPHABET_LEN - 1)
     return &EMPTY_NODE;
 
+  // Create child nodes if they don't already exist
   if (root->children[index] == NULL) {
     debugf(DEBUG_TRACE_INSERT, "node_insert: parent node has no child for char '%c', creating\n", c);
     root->children[index] = trie_node_create();
@@ -247,6 +262,7 @@ trie_node *trie_node_insert(trie_node *root, char c) {
   return root->children[index];
 }
 
+// Inserts an entire string into a trie
 void trie_insert(trie_node *root, const char *str) {
   if (root == NULL || root == &EMPTY_NODE) {
     debugf(DEBUG_TRACE_INSERT, "trie_node: given bad node for %s\n", str);
@@ -269,6 +285,7 @@ void trie_insert(trie_node *root, const char *str) {
   cursor->isEnd = 1;
 }
 
+// Searches a trie for a given string
 trie_node *trie_search(trie_node *root, const char *str) {
   int len = strlen(str);
   trie_node *cursor = root;
@@ -277,7 +294,7 @@ trie_node *trie_search(trie_node *root, const char *str) {
     int idx = ((int)str[i] - CONFIG_ASCII_BASE);
 
     if (cursor->children[idx] == &EMPTY_NODE || cursor->children[idx] == NULL) {
-      debugf(DEBUG_TRACE_SEARCH, "search: interrupted finding '%s', intermediate node %d has no children\n", str, i);
+      debugf(DEBUG_TRACE_SEARCH, "search: interrupted finding '%s', intermediate node %d has no child '%c'\n", str, i, str[i]);
       return 0;
     }
 
@@ -287,23 +304,30 @@ trie_node *trie_search(trie_node *root, const char *str) {
   if (cursor != NULL && cursor != &EMPTY_NODE) {
     debugf(DEBUG_TRACE_SEARCH, "search: '%s' was found\n", str);
     return cursor;
-  } else {
-    debugf(DEBUG_TRACE_SEARCH, "search: couldn't find '%s'\n", str);
-    return &EMPTY_NODE;
   }
+
+  debugf(DEBUG_TRACE_SEARCH, "search: couldn't find '%s'\n", str);
+  return &EMPTY_NODE;
 }
 
+// Searches a trie for a given prefix and returns the most likely character(s)
+// following the end of that prefix
 char *trie_suggest(trie_node *root, const char *str) {
   trie_node *pfx_root = trie_search(root, str);
 
+  // If the search was unsuccessful, return an error sentinel value
   if (pfx_root == NULL || pfx_root == &EMPTY_NODE || pfx_root->children == NULL) {
     debugf(DEBUG_TRACE_SUGGEST, "suggest: got bad node from search\n");
     return &NOT_FOUND;
   }
 
+  // Otherwise, prepare an array to store candidate characters
   char *sug = mmgr_malloc(g_MEM, sizeof(char) * CONFIG_ALPHABET_LEN);
   int likely = 0, sug_i = 0;
 
+  // First pass: determine the highest frequency value in the array of the trie
+  // node's children. This will provide the threshold against each child will be
+  // compared
   for (int i = 0; i < CONFIG_ALPHABET_LEN; i++) {
     if (pfx_root->children[i] == NULL || pfx_root->children[i] == &EMPTY_NODE)
       continue;
@@ -314,6 +338,10 @@ char *trie_suggest(trie_node *root, const char *str) {
 
   debugf(DEBUG_TRACE_SUGGEST, "suggest: determined most likely frequency threshold is %d\n", likely);
 
+  // Now that the highest frequency threshold has been determined, the next suggested
+  // character(s) will consist of any child nodes with a frequency equal to the likely
+  // threshold determined above. These will all be concatenated together into the
+  // suggestion string
   for (int i = 0; i < CONFIG_ALPHABET_LEN; i++) {
     if (pfx_root->children[i] == NULL || pfx_root->children[i] == &EMPTY_NODE)
       continue;
