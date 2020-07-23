@@ -17,10 +17,10 @@ int main() {
   int arr2[] = {12, 110, 14, 15, 13, 115};
 
   print_array(arr1, 6);
-  printf("Is it a minheap? %s\n", ((isHeap_recursive(arr1, 0, 6) == 0) && (isHeap_iter(arr1, 6) == 0)) ? "yes!" : "no");
+  printf("Is it a minheap? %s\n", ((isHeap_recursive(arr1, 0, 6) == 1) && (isHeap_iter(arr1, 6) == 1)) ? "yes!" : "no");
 
   print_array(arr2, 6);
-  printf("Is it a minheap? %s\n", ((isHeap_recursive(arr2, 0, 6) == 0) && (isHeap_iter(arr2, 6) == 0)) ? "yes!" : "no");
+  printf("Is it a minheap? %s\n", ((isHeap_recursive(arr2, 0, 6) == 1) && (isHeap_iter(arr2, 6) == 1)) ? "yes!" : "no");
 }
 
 void print_array(int arr[], int n) {
@@ -35,15 +35,14 @@ int isHeap_recursive(int arr[], int i, int n) {
   if (i > (n - 2) / 2)
     return 0;
 
-  if (arr[i] >= arr[2 * i + 1] && isHeap_recursive(arr, 2 * i + 1, n) &&
-      arr[i] >= arr[2 * i + 2] && isHeap_recursive(arr, 2 * i + 2, n))
+  if (arr[i] >= arr[2 * i + 1] && isHeap_recursive(arr, 2 * i + 1, n) && arr[i] >= arr[2 * i + 2] && isHeap_recursive(arr, 2 * i + 2, n))
     return 0;
 
   return 1;
 }
 
 int isHeap_iter(int arr[], int n) {
-  for (int i = (n / 2 - 1); i-- >= 0;) {
+  for (int i = 0; i <= (n - 2) / 2; i++) {
     if (arr[i] > arr[2 * i + 1])
       return 0;
 
