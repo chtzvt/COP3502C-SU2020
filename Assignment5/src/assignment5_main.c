@@ -60,6 +60,7 @@ typedef struct task_heap {
   int size;
 } task_heap;
 
+void heap_print(task_heap *heap);
 task *heap_pop_max(task_heap *heap);
 void heap_insert(task_heap *heap, task *t);
 int heap_min(task *a, int ia, task *b, int ib);
@@ -320,7 +321,14 @@ task *heap_pop_max(task_heap *heap) {
   return max;
 }
 
-task *task_create(int id, int time_assigned, int *phases, int num_phases, int time_left) {
+void heap_print(task_heap *heap) {
+  for (int i = 0; i <= heap->size; i++)
+    printf("id:%d  time_assigned:%d  num_phases:%d  first_phase:%d  next_phase:%d  time_left:%d\n",
+           heap->tasks[i]->id, heap->tasks[i]->time_assigned, heap->tasks[i]->num_phases, heap->tasks[i]->phases[0],
+           heap->tasks[i]->next_phase, heap->tasks[i]->time_left);
+}
+
+task *task_create(int id, int time_assigned, int *phases, int num_phases) {
   if (phases == NULL)
     return &EMPTY_TASK;
 
