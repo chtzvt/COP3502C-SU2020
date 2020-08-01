@@ -37,17 +37,16 @@ typedef struct task {
   int id;
   int time_assigned;
   int num_phases;
-  int **phase_lengths;
+  int *phases;
   int time_left;
   int next_phase;
-  int priority;
 } task;
 
 task EMPTY_TASK;
 
-task *task_create(int id, int time_assigned, int num_phases, int time_left, int next_phase);
+task *task_create(int id, int time_assigned, int *phases, int num_phases, int time_left);
 void task_destroy(task *t);
-void task_run_next_phase(task *task);
+void task_run_next_phase(task *t);
 int task_compare(task *t1, task *t2); // comparison
 
 typedef struct task_heap {
@@ -312,6 +311,66 @@ task *heap_pop_max(task_heap *heap) {
   heap_perc_up(heap, 1);
 
   return max;
+}
+
+task *task_create(int id, int time_assigned, int *phases, int num_phases, int time_left) {
+  if (phases == NULL)
+    return &EMPTY_TASK;
+
+  task *tmp = mmgr_malloc(g_MEM, sizeof(task));
+  tmp->id = id;
+  tmp->time_assigned = time_assigned;
+  tmp->phases = phases;
+  tmp->num_phases = num_phases;
+
+  int acc = 0;
+  for (int i = 0; i < num_phases; i++)
+    acc += phases[i];
+
+  tmp->time_left = acc;
+  tmp->next_phase = 0;
+
+  return tmp;
+}
+
+void task_destroy(task *t) {
+  if (t == NULL || t == &EMPTY_TASK)
+    return;
+
+  free(t->phases);
+  free(t);
+}
+
+void task_run_next_phase(task *t) {
+  if (t == NULL || t == &EMPTY_TASK)
+    return;
+
+  if (t->next_phase >= t->num_phases) {
+    t->time_left = 0;
+    return;
+  }
+
+  t->time_left -= t->phases[t->next_phase];
+  t->next_phase++;
+}
+
+int task_compare(task *t1, task *t2) {
+  if (t1 == NULL || t1 == &EMPTY_TASK || t2 == NULL || t2 == &EMPTY_TASK)
+    return -3;
+
+  if (t1->time_left > t2->time_left)
+    return -1;
+
+  if (t1->time_left == t2->time_left && t1->id < t2->id)
+    return -1;
+
+  if (t2->time_left > t1->time_left)
+    return 1;
+
+  if (t2->time_left == t1->time_left && t2->id < t1->id)
+    return 1;
+
+  return 0;
 }
 
 ////////////////////////// Util //////////////////////////
