@@ -3,16 +3,10 @@
    This program is written by: Charlton Trezevant
  */
 
-#include <math.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "leak_detector_c.h"
-
 ////////////////////////// Global Project Configuation //////////////////////////
 #define CONFIG_INFILE_NAME "in.txt"
 #define CONFIG_OUTFILE_NAME "out.txt"
+//#define ENABLE_AHMED_LEAK_DETECTOR
 #define CONFIG_MAX_TASKS 10E6
 #define CONFIG_MAX_TIME 10E9
 #define CONFIG_MAX_TASK_TIME 10E9
@@ -31,6 +25,16 @@
 
 // Current debug level set/disable
 //#define DEBUG DEBUG_LEVEL_ALL
+
+#include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef ENABLE_AHMED_LEAK_DETECTOR
+#include "leak_detector_c.h"
+#endif
 
 ////////////////////////// Assignment 5 Prototypes and Globals //////////////////////////
 
@@ -119,8 +123,10 @@ void write_out(const char *format, ...);
 ////////////////////////// Entry //////////////////////////
 
 int main(int argc, char **argv) {
+#ifdef ENABLE_AHMED_LEAK_DETECTOR
   debugf(DEBUG_LEVEL_TRACE, "Ahmed memory leak detector init.\n");
   atexit(report_mem_leak); //Ahmed's memory leak detection
+#endif
 
   // Initialize MMGR
   debugf(DEBUG_LEVEL_TRACE, "MMGR init.\n");
