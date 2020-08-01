@@ -13,6 +13,7 @@
 ////////////////////////// Global Project Configuation //////////////////////////
 #define CONFIG_INFILE_NAME "in.txt"
 #define CONFIG_OUTFILE_NAME "out.txt"
+#define CONFIG_MAX_TASKS 10E6
 #define CONFIG_MAX_TIME 10E9
 #define CONFIG_MAX_TASK_TIME 10E9
 #define CONFIG_MAX_TASK_PHASES 100
@@ -317,16 +318,22 @@ task *task_create(int id, int time_assigned, int *phases, int num_phases, int ti
   if (phases == NULL)
     return &EMPTY_TASK;
 
-  task *tmp = mmgr_malloc(g_MEM, sizeof(task));
-  tmp->id = id;
-  tmp->time_assigned = time_assigned;
-  tmp->phases = phases;
-  tmp->num_phases = num_phases;
+  if (time_assigned > CONFIG_MAX_TASK_TIME || num_phases > CONFIG_MAX_TASK_PHASES)
+    return &EMPTY_TASK;
 
   int acc = 0;
   for (int i = 0; i < num_phases; i++)
     acc += phases[i];
 
+  if (acc > CONFIG_MAX_TASK_PHASE_CUMUL_TIME) {
+    return &EMPTY_TASK;
+  }
+
+  task *tmp = mmgr_malloc(g_MEM, sizeof(task));
+  tmp->id = id;
+  tmp->time_assigned = time_assigned;
+  tmp->phases = phases;
+  tmp->num_phases = num_phases;
   tmp->time_left = acc;
   tmp->next_phase = 0;
 
