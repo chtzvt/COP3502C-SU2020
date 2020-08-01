@@ -55,7 +55,7 @@ typedef struct task_heap {
   int size;
 } task_heap;
 
-task *heap_pop_min(task_heap *heap);
+task *heap_pop_max(task_heap *heap);
 void heap_insert(task_heap *heap, task *t);
 int heap_min(task *a, int ia, task *b, int ib);
 void heap_swap(task_heap *heap, int i1, int i2);
@@ -243,7 +243,7 @@ void heap_perc_up(task_heap *heap, int i) {
   if (i < 1)
     return;
 
-  if (task_compare(heap->tasks[i / 2], heap->tasks[i]) > 0) {
+  if (task_compare(heap->tasks[i / 2], heap->tasks[i]) < 0) {
     heap_swap(heap, i, i / 2);
     heap_perc_up(heap, i / 2);
   }
@@ -252,14 +252,14 @@ void heap_perc_up(task_heap *heap, int i) {
 void heap_perc_down(task_heap *heap, int i) {
   if ((2 * i + 1) <= heap->size) {
     int min = heap_min(heap->tasks[2 * i], 2 * i, heap->tasks[2 * i + 1], 2 * i + 1);
-    if (task_compare(heap->tasks[i], heap->tasks[min]) > 0) {
+    if (task_compare(heap->tasks[i], heap->tasks[min]) < 0) {
       heap_swap(heap, i, min);
       heap_perc_down(heap, min);
     }
   }
 
   else if (heap->size == 2 * i) {
-    if (task_compare(heap->tasks[i], heap->tasks[2 * i]) > 0)
+    if (task_compare(heap->tasks[i], heap->tasks[2 * i]) < 0)
       heap_swap(heap, i, 2 * i);
   }
 }
@@ -276,7 +276,7 @@ void heap_swap(task_heap *heap, int i1, int i2) {
 }
 
 int heap_min(task *a, int ia, task *b, int ib) {
-  if (task_compare(a, b) < 0)
+  if (task_compare(a, b) > 0)
     return ia;
 
   return ib;
