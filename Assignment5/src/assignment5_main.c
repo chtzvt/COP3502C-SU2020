@@ -49,7 +49,7 @@ typedef struct task {
 
 task EMPTY_TASK;
 
-task *task_create(int id, int time_assigned, int *phases, int num_phases, int time_left);
+task *task_create(int id, int time_assigned, int *phases, int num_phases);
 void task_destroy(task *t);
 void task_run_next_phase(task *t);
 int task_compare(task *t1, task *t2); // comparison
@@ -169,40 +169,37 @@ int main(int argc, char **argv) {
   }
 
   // Read in the number of commands to process
-  int n_cmds = 0;
+  int n_tasks = 0;
   if (!feof(infile)) {
-    fscanf(infile, "%d", &n_cmds);
+    fscanf(infile, "%d", &n_tasks);
   } else {
-    printf("invalid input file format: number of commands unknown\n");
-    return 1;
+    panic("invalid input file format: number of tasks unknown\n");
   }
+
+  if (n_tasks > CONFIG_MAX_TASKS)
+    panic("invalid input file format: %d tasks greater than max %d\n", n_tasks, CONFIG_MAX_TASKS);
+
+  task_heap *tasks;
+  task **tasks_arr = mmgr_malloc(g_MEM, sizeof(task *) * n_tasks);
 
   // Command processing loop
-  for (int i = 0; i < n_cmds; i++) {
-    // Input buffer and temporary variables for use
-    // in command processing
-    char str[50];
-    int cmd_type, num_insertions;
+  for (int i = 0; i < n_tasks; i++) {
+    if (feof(infile))
+      panic("invalid input: encountered EOF while processing task %d of %d", i + 1, n_tasks);
 
-    if (!feof(infile)) {
-      // Read command type
-      fscanf(infile, "%d", &cmd_type);
-      debugf(DEBUG_LEVEL_TRACE, "Command type: %d\n", cmd_type);
+    int time_assigned = 0, num_phases = 0;
+    fscanf(infile, "%d %d", &time_assigned, &num_phases);
 
-      switch (cmd_type) {
-      case 1: // Insertion
-        fscanf(infile, "%s %d", str, &num_insertions);
-        debugf(DEBUG_LEVEL_TRACE, "Insert: %s %d times\n", str, num_insertions);
-        break;
+    int *phases = mmgr_malloc(g_MEM, sizeof(int) * num_phases);
 
-      case 2: // Queries
-        fscanf(infile, "%s", str);
+    for (int j = 0; j < num_phases; j++)
+      fscanf(infile, "%d", &phases[i]);
 
-        debugf(DEBUG_LEVEL_TRACE, "Running suggest on '%s', got '%s'\n", str, found);
-        break;
-      }
-    }
+    tasks_arr[i] = task_create(i, time_assigned, phases, num_phases);
   }
+
+  tasks = heap_init_array(tasks_arr, n_tasks);
+  heap_print(tasks);
 
   // Clean up allocated memory
   debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
