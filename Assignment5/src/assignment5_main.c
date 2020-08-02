@@ -18,7 +18,7 @@
 #define DEBUG_LEVEL_ALL 0
 #define DEBUG_LEVEL_TRACE 1
 #define DEBUG_LEVEL_INFO 2
-#define DEBUG_TRACE_TASK_CREATE -10
+#define DEBUG_TRACE_TASK_CREATE -3
 
 // Functionality-specific debug levels
 // These enable debug output only for specific sections of the program
@@ -324,7 +324,7 @@ task *heap_pop_max(task_heap *heap) {
 
 void heap_print(task_heap *heap) {
   for (int i = 0; i < heap->size; i++) {
-    if (heap->tasks[i] == &EMPTY_TASK)
+    if (heap->tasks[i] == NULL || heap->tasks[i] == &EMPTY_TASK)
       continue;
 
     printf("id:%d  time_assigned:%d  num_phases:%d ",
@@ -362,6 +362,15 @@ task *task_create(int id, int time_assigned, int *phases, int num_phases) {
   tmp->num_phases = num_phases;
   tmp->time_left = acc;
   tmp->next_phase = 0;
+
+  debugf(DEBUG_TRACE_TASK_CREATE, "task_create: instantiated {id:%d  time_assigned:%d  num_phases:%d  phases:[",
+         tmp->id, tmp->time_assigned, tmp->num_phases);
+
+  for (int i = 0; i < tmp->num_phases; i++)
+    debugf(DEBUG_TRACE_TASK_CREATE, "%d ", tmp->phases[i]);
+
+  debugf(DEBUG_TRACE_TASK_CREATE, "]  first_phase:%d  next_phase:%d  phase_total:%d  time_left:%d}\n",
+         tmp->phases[0], tmp->next_phase, acc, tmp->time_left);
 
   return tmp;
 }
