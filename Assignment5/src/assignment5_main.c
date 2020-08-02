@@ -18,13 +18,14 @@
 #define DEBUG_LEVEL_ALL 0
 #define DEBUG_LEVEL_TRACE 1
 #define DEBUG_LEVEL_INFO 2
+#define DEBUG_TRACE_TASK_CREATE -10
 
 // Functionality-specific debug levels
 // These enable debug output only for specific sections of the program
 #define DEBUG_TRACE_MMGR -7
 
 // Current debug level set/disable
-//#define DEBUG DEBUG_LEVEL_ALL
+#define DEBUG DEBUG_TRACE_TASK_CREATE
 
 #include <math.h>
 #include <stdarg.h>
@@ -326,24 +327,31 @@ void heap_print(task_heap *heap) {
     if (heap->tasks[i] == &EMPTY_TASK)
       continue;
 
-    printf("id:%d  time_assigned:%d  num_phases:%d  first_phase:%d  next_phase:%d  time_left:%d\n",
-           heap->tasks[i]->id, heap->tasks[i]->time_assigned, heap->tasks[i]->num_phases, heap->tasks[i]->phases[0],
-           heap->tasks[i]->next_phase, heap->tasks[i]->time_left);
+    printf("id:%d  time_assigned:%d  num_phases:%d ",
+           heap->tasks[i]->id, heap->tasks[i]->time_assigned, heap->tasks[i]->num_phases);
+
+    printf("first_phase:%d  next_phase:%d  time_left:%d\n",
+           heap->tasks[i]->phases[0], heap->tasks[i]->next_phase, heap->tasks[i]->time_left);
   }
 }
 
 task *task_create(int id, int time_assigned, int *phases, int num_phases) {
-  if (phases == NULL)
+  if (phases == NULL) {
+    debugf(DEBUG_TRACE_TASK_CREATE, "task_create: returning EMPTY_TASK on id:(%d) due to NULL phase array", id);
     return &EMPTY_TASK;
+  }
 
-  if (time_assigned > CONFIG_MAX_TASK_TIME || num_phases > CONFIG_MAX_TASK_PHASES)
+  if (time_assigned > CONFIG_MAX_TASK_TIME || num_phases > CONFIG_MAX_TASK_PHASES) {
+    debugf(DEBUG_TRACE_TASK_CREATE, "task_create: returning EMPTY_TASK on id:(%d) due to invalid assignment time or max phases", id);
     return &EMPTY_TASK;
+  }
 
   int acc = 0;
   for (int i = 0; i < num_phases; i++)
     acc += phases[i];
 
   if (acc > CONFIG_MAX_TASK_PHASE_CUMUL_TIME) {
+    debugf(DEBUG_TRACE_TASK_CREATE, "task_create: returning EMPTY_TASK on id:(%d) due to invalid cumulative phase time", id);
     return &EMPTY_TASK;
   }
 
