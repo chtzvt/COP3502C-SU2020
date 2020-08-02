@@ -206,7 +206,35 @@ int main(int argc, char **argv) {
   }
 
   tasks = heap_init_array(tasks_arr, n_tasks);
+  printf("\n-----------------\n");
   heap_print(tasks);
+  task *tmp = heap_pop_max(tasks);
+
+  printf("\n-----------------\nCurrent maximum task: \n");
+  debugf(DEBUG_TRACE_TASK, "{id:%d  time_assigned:%d  num_phases:%d  phases:[",
+         tmp->id, tmp->time_assigned, tmp->num_phases);
+  for (int i = 0; i < tmp->num_phases; i++)
+    debugf(DEBUG_TRACE_TASK, "%d%s", tmp->phases[i], (i == tmp->num_phases - 1) ? "" : " ");
+  debugf(DEBUG_TRACE_TASK, "]  first_phase:%d  next_phase:%d  phase_total:%d  time_left:%d}\n",
+         tmp->phases[0], tmp->next_phase, 80085, tmp->time_left);
+
+  printf("\n-----------------\nHeap state: \n");
+  heap_print(tasks);
+  printf("\n-----------------\n");
+
+  for (int i = 0; i < 10; i++) {
+    tmp = heap_pop_max(tasks);
+    if (tmp == NULL || tmp == &EMPTY_TASK)
+      continue;
+
+    debugf(DEBUG_TRACE_TASK, "{id:%d  time_assigned:%d  num_phases:%d  phases:[",
+           tmp->id, tmp->time_assigned, tmp->num_phases);
+    for (int i = 0; i < tmp->num_phases; i++)
+      debugf(DEBUG_TRACE_TASK, "%d%s", tmp->phases[i], (i == tmp->num_phases - 1) ? "" : " ");
+    debugf(DEBUG_TRACE_TASK, "]  first_phase:%d  next_phase:%d  phase_total:%d  time_left:%d}\n",
+           tmp->phases[0], tmp->next_phase, 80085, tmp->time_left);
+  }
+  printf("\n-----------------\n");
 
   // Clean up allocated memory
   debugf(DEBUG_LEVEL_TRACE, "MMGR Cleanup.\n");
