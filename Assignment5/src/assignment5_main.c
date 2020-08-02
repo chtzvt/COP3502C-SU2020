@@ -190,12 +190,12 @@ int main(int argc, char **argv) {
     int time_assigned = 0, num_phases = 0;
     fscanf(infile, "%d %d", &time_assigned, &num_phases);
 
-    int *phases = mmgr_malloc(g_MEM, sizeof(int) * num_phases);
+    int *phases = (int *)mmgr_malloc(g_MEM, sizeof(int) * num_phases);
 
     int temp;
     for (int j = 0; j < num_phases; j++) {
       fscanf(infile, "%d", &temp);
-      phases[i] = temp;
+      phases[j] = temp;
     }
 
     tasks_arr[i] = task_create(i, time_assigned, phases, num_phases);
@@ -240,7 +240,7 @@ task_heap *heap_init_array(task **tasks, int n) {
   heap->tasks = mmgr_malloc(g_MEM, sizeof(task *) * (n + 1));
   heap->size = n;
 
-  for (int i = 1; i < n + 1; i++)
+  for (int i = 0; i < n; i++)
     heap->tasks[i] = tasks[i];
 
   heap_heapify(heap);
@@ -322,7 +322,7 @@ task *heap_pop_max(task_heap *heap) {
 }
 
 void heap_print(task_heap *heap) {
-  for (int i = 0; i <= heap->size; i++) {
+  for (int i = 0; i < heap->size; i++) {
     if (heap->tasks[i] == &EMPTY_TASK)
       continue;
 
