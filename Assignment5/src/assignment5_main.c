@@ -18,14 +18,15 @@
 #define DEBUG_LEVEL_ALL 0
 #define DEBUG_LEVEL_TRACE 1
 #define DEBUG_LEVEL_INFO 2
-#define DEBUG_TRACE_TASK_CREATE -3
+#define DEBUG_TRACE_TASK -3
+#define DEBUG_TRACE_HEAP -4
 
 // Functionality-specific debug levels
 // These enable debug output only for specific sections of the program
 #define DEBUG_TRACE_MMGR -7
 
 // Current debug level set/disable
-#define DEBUG DEBUG_TRACE_TASK_CREATE
+#define DEBUG DEBUG_LEVEL_ALL
 
 #include <math.h>
 #include <stdarg.h>
@@ -186,7 +187,7 @@ int main(int argc, char **argv) {
   // Command processing loop
   for (int i = 0; i < n_tasks; i++) {
     if (feof(infile))
-      panic("invalid input: encountered EOF while processing task %d of %d", i + 1, n_tasks);
+      panic("invalid input: encountered EOF while processing task %d of %d\n", i + 1, n_tasks);
 
     int time_assigned = 0, num_phases = 0;
     fscanf(infile, "%d %d", &time_assigned, &num_phases);
@@ -310,8 +311,10 @@ void heap_insert(task_heap *heap, task *t) {
 }
 
 task *heap_pop_max(task_heap *heap) {
-  if (heap->size <= 0)
+  if (heap->size <= 0) {
+    debugf(DEBUG_TRACE_HEAP, "heap_pop_max: size empty so returning EMPTY_TASK\n");
     return &EMPTY_TASK;
+  }
 
   task *max = heap->tasks[1];
   heap->tasks[1] = heap->tasks[heap->size];
@@ -324,8 +327,10 @@ task *heap_pop_max(task_heap *heap) {
 
 void heap_print(task_heap *heap) {
   for (int i = 0; i < heap->size; i++) {
-    if (heap->tasks[i] == NULL || heap->tasks[i] == &EMPTY_TASK)
+    if (heap->tasks[i] == NULL || heap->tasks[i] == &EMPTY_TASK) {
+      debugf(DEBUG_TRACE_HEAP, "heap_print: index %d is NULL!\n", i);
       continue;
+    }
 
     printf("id:%d  time_assigned:%d  num_phases:%d ",
            heap->tasks[i]->id, heap->tasks[i]->time_assigned, heap->tasks[i]->num_phases);
@@ -337,12 +342,12 @@ void heap_print(task_heap *heap) {
 
 task *task_create(int id, int time_assigned, int *phases, int num_phases) {
   if (phases == NULL) {
-    debugf(DEBUG_TRACE_TASK_CREATE, "task_create: returning EMPTY_TASK on id:(%d) due to NULL phase array", id);
+    debugf(DEBUG_TRACE_TASK, "task_create: returning EMPTY_TASK on id:(%d) due to NULL phase array\n", id);
     return &EMPTY_TASK;
   }
 
   if (time_assigned > CONFIG_MAX_TASK_TIME || num_phases > CONFIG_MAX_TASK_PHASES) {
-    debugf(DEBUG_TRACE_TASK_CREATE, "task_create: returning EMPTY_TASK on id:(%d) due to invalid assignment time or max phases", id);
+    debugf(DEBUG_TRACE_TASK, "task_create: returning EMPTY_TASK on id:(%d) due to invalid assignment time or max phases\n", id);
     return &EMPTY_TASK;
   }
 
@@ -351,7 +356,7 @@ task *task_create(int id, int time_assigned, int *phases, int num_phases) {
     acc += phases[i];
 
   if (acc > CONFIG_MAX_TASK_PHASE_CUMUL_TIME) {
-    debugf(DEBUG_TRACE_TASK_CREATE, "task_create: returning EMPTY_TASK on id:(%d) due to invalid cumulative phase time", id);
+    debugf(DEBUG_TRACE_TASK, "task_create: returning EMPTY_TASK on id:(%d) due to invalid cumulative phase time\n", id);
     return &EMPTY_TASK;
   }
 
@@ -363,13 +368,13 @@ task *task_create(int id, int time_assigned, int *phases, int num_phases) {
   tmp->time_left = acc;
   tmp->next_phase = 0;
 
-  debugf(DEBUG_TRACE_TASK_CREATE, "task_create: instantiated {id:%d  time_assigned:%d  num_phases:%d  phases:[",
+  debugf(DEBUG_TRACE_TASK, "task_create: make {id:%d  time_assigned:%d  num_phases:%d  phases:[",
          tmp->id, tmp->time_assigned, tmp->num_phases);
 
   for (int i = 0; i < tmp->num_phases; i++)
-    debugf(DEBUG_TRACE_TASK_CREATE, "%d ", tmp->phases[i]);
+    debugf(DEBUG_TRACE_TASK, "%d%s", tmp->phases[i], (i == tmp->num_phases - 1) ? "" : " ");
 
-  debugf(DEBUG_TRACE_TASK_CREATE, "]  first_phase:%d  next_phase:%d  phase_total:%d  time_left:%d}\n",
+  debugf(DEBUG_TRACE_TASK, "]  first_phase:%d  next_phase:%d  phase_total:%d  time_left:%d}\n",
          tmp->phases[0], tmp->next_phase, acc, tmp->time_left);
 
   return tmp;
@@ -378,6 +383,8 @@ task *task_create(int id, int time_assigned, int *phases, int num_phases) {
 void task_destroy(task *t) {
   if (t == NULL || t == &EMPTY_TASK)
     return;
+
+  debugf(DEBUG_TRACE_TASK, "task_destroy: id:(%d)\n", t->id);
 
   free(t->phases);
   free(t);
@@ -388,12 +395,14 @@ void task_run_next_phase(task *t) {
     return;
 
   if (t->next_phase >= t->num_phases) {
+    debugf(DEBUG_TRACE_TASK, "task_run_next_phase: reached end phase for id:(%d)\n", t->id);
     t->time_left = 0;
     return;
   }
 
   t->time_left -= t->phases[t->next_phase];
   t->next_phase++;
+  debugf(DEBUG_TRACE_TASK, "task_run_next_phase: task id:(%d) time_left:(%d) next_phase:(%d)\n", t->id, t->time_left, t->next_phase);
 }
 
 int task_compare(task *t1, task *t2) {
