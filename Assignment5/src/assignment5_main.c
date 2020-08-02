@@ -201,6 +201,8 @@ int main(int argc, char **argv) {
     }
 
     tasks_arr[i] = task_create(i, time_assigned, phases, num_phases);
+    if (tasks_arr[i] == NULL)
+      debugf(DEBUG_LEVEL_INFO, "main: create task id:(%d) got NULL!\n", i);
   }
 
   tasks = heap_init_array(tasks_arr, n_tasks);
@@ -242,8 +244,10 @@ task_heap *heap_init_array(task **tasks, int n) {
   heap->tasks = mmgr_malloc(g_MEM, sizeof(task *) * (n + 1));
   heap->size = n;
 
-  for (int i = 0; i < n; i++)
+  for (int i = 0; i < n; i++) {
+    debugf(DEBUG_TRACE_HEAP, "heap_init_array: copy task id:(%d) to heap index %d\n", tasks[i]->id, i);
     heap->tasks[i] = tasks[i];
+  }
 
   heap_heapify(heap);
   return heap;
@@ -294,6 +298,7 @@ int heap_min(task *a, int ia, task *b, int ib) {
 
 void heap_insert(task_heap *heap, task *t) {
   if (heap->size == heap->capacity) {
+    debugf(DEBUG_TRACE_HEAP, "heap_insert: capacity %d reached inserting id:(%d), resizing heap\n", heap->capacity, t->id);
     task **tasks_realc = mmgr_malloc(g_MEM, sizeof(task) * (2 * heap->capacity + 1));
     for (int i = 0; i < heap->size; i++) {
       tasks_realc[i] = heap->tasks[i];
