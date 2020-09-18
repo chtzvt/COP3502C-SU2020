@@ -353,7 +353,7 @@ task *heap_pop_max(task_heap *heap) {
   heap->tasks[1] = heap->tasks[heap->size];
   heap->size--;
 
-  heap_perc_up(heap, 1);
+  heap_perc_up(heap, heap->size - 1);
 
   return max;
 }
@@ -439,19 +439,31 @@ void task_run_next_phase(task *t) {
 }
 
 int task_compare(task *t1, task *t2) {
-  if (t1 == NULL || t1 == &EMPTY_TASK || t2 == NULL || t2 == &EMPTY_TASK)
-    return -3;
+  if (t1 != NULL && t2 == NULL) {
+    debugf(DEBUG_TRACE_TASK, "task_compare: bad operator\n");
+    return -1;
+  }
+
+  if (t1 == NULL && t2 != NULL) {
+    debugf(DEBUG_TRACE_TASK, "task_compare: bad operator\n");
+    return 1;
+  }
+
+  if (t1 == NULL && t2 == NULL) {
+    debugf(DEBUG_TRACE_TASK, "task_compare: bad operator\n");
+    return 0;
+  }
 
   if (t1->time_left > t2->time_left)
     return -1;
 
+  if (t1->time_left < t2->time_left)
+    return 1;
+
   if (t1->time_left == t2->time_left && t1->id < t2->id)
     return -1;
 
-  if (t2->time_left > t1->time_left)
-    return 1;
-
-  if (t2->time_left == t1->time_left && t2->id < t1->id)
+  if (t1->time_left == t2->time_left && t1->id > t2->id)
     return 1;
 
   return 0;
